@@ -1,0 +1,2 @@
+SRR6345446	SRR6345446-rep1	test_data/head-100k_SRR6345446_1.fastq.gz	test_data/head-100k_SRR6345446_2.fastq.gz
+SRR7345580	SRR7345580-rep1	test_data/head-100k_SRR7345580_1.fastq.gz	test_data/head-100k_SRR7345580_2.fastq.gz
