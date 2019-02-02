@@ -1,0 +1,1 @@
+SRR6345446	SRR6345446-rep1	test_data/SRR6345446_head-10k_1.fastq.gz	test_data/SRR6345446_head-10k_2.fastq.gz
