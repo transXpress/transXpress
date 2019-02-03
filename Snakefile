@@ -68,17 +68,19 @@ rule trinity_inchworm_chrysalis:
 
 checkpoint trinity_butterfly_split:
   input:
-    '{trinity_out_dir}/recursive_trinity.cmds'
+    'trinity_out_dir/recursive_trinity.cmds'
   output:
-    directory('{trinity_out_dir}/parallel')
+    directory('trinity_out_dir/parallel')
   log:
-      'logs/log_trinity_split_{trinity_out_dir}.txt'
+      'logs/log_trinity_split.txt'
   params:
     memory="10"
   threads:
     1
   shell:
     """
+    rm -rf trinity_out_dir/parallel
+    mkdir trinity_out_dir/parallel
     split -l 100 {input} trinity_out_dir/parallel/job
     """
 
@@ -89,7 +91,7 @@ rule trinity_butterfly_parallel:
   output:
     'trinity_out_dir/parallel/completed{job_index}'
   log:
-      'logs/log_trinity_parallel{job_index}.txt'
+    'logs/log_trinity_parallel{job_index}.txt'
   params:
     memory="10"
   threads:
@@ -100,8 +102,8 @@ rule trinity_butterfly_parallel:
     cat {input} > {output}
     """
 
-def trinity_completed_parallel_jobs():
-  checkpoint_output = checkpoints.trinity_butterfly_split.get(trinity_out_dir="trinity_out_dir").output
+def trinity_completed_parallel_jobs(wildcards):
+  checkpoint_output = checkpoints.trinity_butterfly_split.get().output
   trinity_job_ids = glob_wildcards(os.path.join(checkpoint_output, "job{job_index}"))
   completed_job_files = expand('trinity_out_dir/parallel/completed{job_index}', job_index=trinity_job_ids)
   return completed_job_files
@@ -110,7 +112,7 @@ rule trinity_butterfly_merge:
   input:
     'samples.txt',
     'trinity_out_dir/recursive_trinity.cmds',
-    trinity_completed_parallel_jobs()
+    trinity_completed_parallel_jobs
   output:
     'trinity_out_dir/recursive_trinity.cmds.completed',
     'transcriptome.fasta',
