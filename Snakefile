@@ -21,10 +21,8 @@ STRAND_SPECIFIC = "" # --SS_lib_type RF
 TRINITY_PARAMS = " --seqType fq"
 TRINITY_PARAMS += " --trimmomatic --quality_trimming_params \"ILLUMINACLIP:" + TRINITY_HOME + "/trinity-plugins/Trimmomatic/adapters/TruSeq3-PE-2.fa:3:30:10 SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:25\""
 TRINITY_PARAMS += " " + STRAND_SPECIFIC
-TRINITY_PARAMS += " --min_glue 2"
-TRINITY_PARAMS += " --min_kmer_cov 3"
-#TRINITY_PARAMS += " --full_cleanup"
-#TRINITY_PARAMS += " --no_normalize_reads"
+ 
+# may consider changing TRINITY_PARAMS += "  --min_kmer_cov 1 --min_glue 2  --no_normalize_reads"
 
 # https://github.com/griffithlab/rnaseq_tutorial/wiki/Trinity-Assembly-And-Analysis
 
@@ -35,14 +33,14 @@ rule all:
     'transcriptome_stats.txt',
     'transcriptome_exN50.tsv.plot.pdf',
     'transcriptome_annotated.fasta',
-    'proteome_annotated.fasta',
+    'transcriptome_annotated.pep',
     'transcriptome_TPM_blast.csv'
 
 
 rule clean:
   shell:
     """
-    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* proteome* transrate_results* pfam* sprot* signalp* tmhmm* db*
+    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* proteome* transrate_results* pfam* sprot* signalp* tmhmm* parallel*
     if [ -f samples.txt ]; then
       cut -f 2 < samples.txt | xargs --no-run-if-empty rm -rf
     fi
@@ -51,11 +49,11 @@ rule clean:
 
 rule trinity_inchworm_chrysalis:
   input:
-    'samples.txt'
+    "samples.txt"
   output:
-    'trinity_out_dir/recursive_trinity.cmds'
+    "trinity_out_dir/recursive_trinity.cmds"
   log:
-    'logs/log_trinity_inchworm_chrysalis.txt'
+    "logs/log_trinity_inchworm_chrysalis.txt"
   params:
     memory="200"
   threads:
@@ -68,28 +66,27 @@ rule trinity_inchworm_chrysalis:
 
 checkpoint trinity_butterfly_split:
   input:
-    'trinity_out_dir/recursive_trinity.cmds'
+    "trinity_out_dir/recursive_trinity.cmds"
   output:
-    directory('trinity_out_dir/parallel')
+    directory("parallel/trinity_jobs")
   log:
-      'logs/log_trinity_split.txt'
+    "logs/log_trinity_split.txt"
   params:
     memory="10"
   threads:
     1
   shell:
     """
-    rm -rf trinity_out_dir/parallel
-    mkdir trinity_out_dir/parallel
-    split -l 100 {input} trinity_out_dir/parallel/job
+    mkdir -p {output}
+    split -l 100 {input} ${output}/job_
     """
 
 
 rule trinity_butterfly_parallel:
   input:
-    'trinity_out_dir/parallel/job{job_index}'
+    'parallel/trinity_jobs/job_{job_index}'
   output:
-    'trinity_out_dir/parallel/completed{job_index}'
+    'parallel/trinity_jobs/completed_{job_index}'
   log:
     'logs/log_trinity_parallel{job_index}.txt'
   params:
@@ -99,14 +96,14 @@ rule trinity_butterfly_parallel:
   shell:
     """
     bash {input}
-    cat {input} > {output}
+    cp {input} {output}
     """
 
 def trinity_completed_parallel_jobs(wildcards):
-  checkpoint_output = checkpoints.trinity_butterfly_split.get().output
-  trinity_job_ids = glob_wildcards(os.path.join(checkpoint_output, "job{job_index}"))
-  completed_job_files = expand('trinity_out_dir/parallel/completed{job_index}', job_index=trinity_job_ids)
-  return completed_job_files
+  parallel_dir = checkpoints.trinity_butterfly_split.get(**wildcards).output[0]
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "job_{job_index}")).job_index
+  completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
+  return completed_ids
 
 rule trinity_butterfly_merge:
   input:
@@ -178,7 +175,7 @@ rule transdecoder:
   input:
     'transcriptome.fasta'
   output:
-    'proteome.fasta'
+    'transcriptome.pep'
   log:
     'logs/log_transdecoder.txt'
   params:
@@ -189,6 +186,7 @@ rule transdecoder:
     """
     rm -rf {input}.transdecoder_dir
     TransDecoder.LongOrfs -t {input}
+    TransDecoder.Predict -t {input}
     mv {input}.transdecoder_dir/longest_orfs.pep {output}
     """
 
@@ -232,39 +230,46 @@ rule trinity_DE:
     """
 
 
-rule pfam_split:
+checkpoint pep_split:
   input:
-    'proteome.fasta'
+    'transcriptome.pep'
   output:
-    dynamic('pfam/proteome{pfam_index}.fasta')
-  #log:
-  #    'logs/log_pep_split.txt'
+    directory('parallel/annotation_pep')
+  log:
+    'logs/log_pep_split.txt'
   params:
     memory="2"
   threads:
     1
   run:
+    os.makedirs(output[0])
     with open(input[0], "r") as input_handle:
       parser = Bio.SeqIO.parse(input_handle, "fasta")
       count = 0
       for entry in parser:
         if (count % 1000 == 0):
-          filename = output[0].replace("__snakemake_dynamic__", str(int(count / 1000)))
+          filename = os.path.join(output[0], str(int(count / 1000)+ ".pep"))
           handle = open(filename, "w");
         # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
         entry.seq = entry.seq.strip("*")
         Bio.SeqIO.write(entry, handle, "fasta")
         count += 1
 
+def parallel_annotation_pep(wildcards):
+  parallel_dir = checkpoints.pep_split.get(**wildcards).output[0]
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "job_{job_index}")).job_index
+  completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
+  return completed_ids
+
 
 rule pfam_parallel:
   input:
-    'pfam/proteome{pfam_index}.fasta',
+    'parallel/annotation_pep/{index}.pep',
     'db/Pfam-A.hmm'
   output:
-    'pfam/proteome{pfam_index}_pfam.out'
+    'parallel/annotation_pep/{index}_pfam.out'
   log:
-    'logs/log_pfam{pfam_index}.txt'
+    'logs/log_pfam_{index}.txt'
   params:
     memory="2"
   threads:
@@ -294,7 +299,7 @@ rule pfam_merge:
 
 rule sprot_blastp_split:
   input:
-    'proteome.fasta'
+    'transcriptome.pep'
   output:
     dynamic('sprot_blastp/proteome{blastp_index}.fasta')
   #log:
@@ -412,7 +417,7 @@ rule sprot_blastx_merge:
 
 rule tmhmm_split:
   input:
-    'proteome.fasta'
+    'transcriptome.pep'
   output:
     dynamic('tmhmm/proteome{tmhmm_index}.fasta')
   #log:
@@ -471,7 +476,7 @@ rule tmhmm_merge:
 
 rule signalp_split:
   input:
-    'proteome.fasta'
+    'transcriptome.pep'
   output:
     dynamic('signalp/proteome{signalp_index}.fasta')
   #log:
@@ -568,7 +573,7 @@ rule kallisto:
 rule annotated_fasta:
   input:
     'transcriptome.fasta',
-    'proteome.fasta',
+    'transcriptome.pep',
     'transcriptome_expression_isoform.tsv',
     'transrate_results/transcriptome/contigs.csv',
     'sprot_blastx/sprot_blastx.out',
@@ -578,7 +583,7 @@ rule annotated_fasta:
     'signalp/signalp.out'
   output:
     'transcriptome_annotated.fasta',
-    'proteome_annotated.fasta'
+    'transcriptome_annotated.pep'
   log:
     'logs/log_annotated_fasta.txt'
   params:
