@@ -66,13 +66,13 @@ rule trinity_inchworm_chrysalis:
     """
 
 
-rule trinity_butterfly_split:
+checkpoint trinity_butterfly_split:
   input:
-    'trinity_out_dir/recursive_trinity.cmds'
+    '{trinity_out_dir}/recursive_trinity.cmds'
   output:
-    dynamic('trinity_out_dir/parallel/job{job_index}')
-  #log:
-  #    'logs/log_trinity_stage2.txt'
+    directory('{trinity_out_dir}/parallel')
+  log:
+      'logs/log_trinity_split_{trinity_out_dir}.txt'
   params:
     memory="10"
   threads:
@@ -88,8 +88,8 @@ rule trinity_butterfly_parallel:
     'trinity_out_dir/parallel/job{job_index}'
   output:
     'trinity_out_dir/parallel/completed{job_index}'
-  #log:
-  #    'logs/log_trinity_stage3.txt'
+  log:
+      'logs/log_trinity_parallel{job_index}.txt'
   params:
     memory="10"
   threads:
@@ -100,12 +100,17 @@ rule trinity_butterfly_parallel:
     cat {input} > {output}
     """
 
+def trinity_completed_parallel_jobs():
+  checkpoint_output = checkpoints.trinity_butterfly_split.get(trinity_out_dir="trinity_out_dir").output
+  trinity_job_ids = glob_wildcards(os.path.join(checkpoint_output, "job{job_index}"))
+  completed_job_files = expand('trinity_out_dir/parallel/completed{job_index}', job_index=trinity_job_ids)
+  return completed_job_files
 
 rule trinity_butterfly_merge:
   input:
     'samples.txt',
     'trinity_out_dir/recursive_trinity.cmds',
-    dynamic('trinity_out_dir/parallel/completed{job_index}'),
+    trinity_completed_parallel_jobs()
   output:
     'trinity_out_dir/recursive_trinity.cmds.completed',
     'transcriptome.fasta',
@@ -333,8 +338,8 @@ rule sprot_blastp_merge:
     dynamic('sprot_blastp/proteome{blastp_index}_sprot_blastp.out')
   output:
     'sprot_blastp/sprot_blastp.out'
-  log:
-    'logs/log_sprot_blastp_merge.txt'
+  #log:
+  #  'logs/log_sprot_blastp_merge.txt'
   params:
     memory="2"
   threads:
@@ -391,8 +396,8 @@ rule sprot_blastx_merge:
     dynamic('sprot_blastx/proteome{blastx_index}_sprot_blastx.out')
   output:
     'sprot_blastx/sprot_blastx.out'
-  log:
-    'logs/log_sprot_blastx_merge.txt'
+  #log:
+  #  'logs/log_sprot_blastx_merge.txt'
   params:
     memory="2"
   threads:
