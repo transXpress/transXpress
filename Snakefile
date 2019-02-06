@@ -40,7 +40,7 @@ rule all:
 rule clean:
   shell:
     """
-    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* proteome* transrate_results* pfam* sprot* signalp* tmhmm* parallel*
+    rm -rf trinity_* tmp* log* TMHMM* tmhmm* kallisto* transcriptome* proteome* pfam* sprot* signalp* parallel* pipeliner*
     if [ -f samples.txt ]; then
       cut -f 2 < samples.txt | xargs --no-run-if-empty rm -rf
     fi
@@ -78,7 +78,7 @@ checkpoint trinity_butterfly_split:
   shell:
     """
     mkdir -p {output}
-    split -l 100 {input} ${output}/job_
+    split -l 100 {input} {output}/job_
     """
 
 
@@ -151,25 +151,6 @@ rule trinity_stats:
     """
 
 
-rule transrate:
-  input:
-    'samples.txt',
-    'transcriptome.fasta'
-  output:
-    'transrate_results/transcriptome/contigs.csv'
-  log:
-    'logs/log_transrate.txt'
-  params:
-    memory="2"
-  threads:
-    12
-  shell:
-    """
-    LEFT=`cut -f 3 < {input[0]} | tr '\n' ',' | sed 's/,*$//g'`
-    RIGHT=`cut -f 4 < {input[0]} | tr '\n' ',' | sed 's/,*$//g'`
-    transrate --threads {threads} --assembly={input[1]} --left=$LEFT --right=$RIGHT
-    """
-
 
 rule transdecoder:
   input:
@@ -230,6 +211,32 @@ rule trinity_DE:
     """
 
 
+checkpoint fasta_split:
+  input:
+    'transcriptome.fasta'
+  output:
+    directory('parallel/annotation_fasta')
+  log:
+    'logs/log_fasta_split.txt'
+  params:
+    memory="2"
+  threads:
+    1
+  run:
+    os.makedirs(output[0], exist_ok=True)
+    with open(input[0], "r") as input_handle:
+      parser = Bio.SeqIO.parse(input_handle, "fasta")
+      count = 0
+      for entry in parser:
+        if (count % 1000 == 0):
+          filename = os.path.join(output[0], str(int(count / 1000)) + ".fasta")
+          handle = open(filename, "w");
+        # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
+        entry.seq = entry.seq.strip("*")
+        Bio.SeqIO.write(entry, handle, "fasta")
+        count += 1
+
+
 checkpoint pep_split:
   input:
     'transcriptome.pep'
@@ -242,24 +249,64 @@ checkpoint pep_split:
   threads:
     1
   run:
-    os.makedirs(output[0])
+    os.makedirs(output[0], exist_ok=True)
     with open(input[0], "r") as input_handle:
       parser = Bio.SeqIO.parse(input_handle, "fasta")
       count = 0
       for entry in parser:
         if (count % 1000 == 0):
-          filename = os.path.join(output[0], str(int(count / 1000)+ ".pep"))
+          filename = os.path.join(output[0], str(int(count / 1000)) + ".pep")
           handle = open(filename, "w");
         # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
         entry.seq = entry.seq.strip("*")
         Bio.SeqIO.write(entry, handle, "fasta")
         count += 1
 
+
 def parallel_annotation_pep(wildcards):
   parallel_dir = checkpoints.pep_split.get(**wildcards).output[0]
-  job_ids = glob_wildcards(os.path.join(parallel_dir, "job_{job_index}")).job_index
-  completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
-  return completed_ids
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}.pep")).index
+  completed_files = expand("parallel/annotations/{index}_{task}.out",index=job_ids, task=wildcards["task"])
+  return completed_files
+
+def parallel_annotation_fasta(wildcards):
+  parallel_dir = checkpoints.fasta_split.get(**wildcards).output[0]
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}.fasta")).index
+  completed_files = expand("parallel/annotations/{index}_{task}.out",index=job_ids, task=wildcards["task"])
+  return completed_files
+
+
+rule annotation_merge_fasta:
+  input:
+    parallel_annotation_fasta
+  output:
+    "annotations_fasta/{task}.out"
+  log:
+    "logs/log_{task}_merge.txt"
+  params:
+    memory="2"
+  threads:
+    1
+  shell:
+    """
+    cat {input} > {output}
+    """
+
+rule annotation_merge_pep:
+  input:
+    parallel_annotation_pep
+  output:
+    "annotations_pep/{task}.out"
+  log:
+    "logs/log_{task}_merge.txt"
+  params:
+    memory="2"
+  threads:
+    1
+  shell:
+    """
+    cat {input} > {output}
+    """
 
 
 rule pfam_parallel:
@@ -267,7 +314,7 @@ rule pfam_parallel:
     'parallel/annotation_pep/{index}.pep',
     'db/Pfam-A.hmm'
   output:
-    'parallel/annotation_pep/{index}_pfam.out'
+    'parallel/annotations/{index}_pfam.out'
   log:
     'logs/log_pfam_{index}.txt'
   params:
@@ -280,56 +327,14 @@ rule pfam_parallel:
     """
 
 
-rule pfam_merge:
-  input:
-    dynamic('pfam/proteome{pfam_index}_pfam.out')
-  output:
-    'pfam/pfam.out'
-  log:
-    'logs/log_pfam_merge.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  shell:
-    """
-    cat {input} > {output}
-    """
-
-
-rule sprot_blastp_split:
-  input:
-    'transcriptome.pep'
-  output:
-    dynamic('sprot_blastp/proteome{blastp_index}.fasta')
-  #log:
-  #    'logs/log_pep_split.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  run:
-    with open(input[0], "r") as input_handle:
-      parser = Bio.SeqIO.parse(input_handle, "fasta")
-      count = 0
-      for entry in parser:
-        if (count % 1000 == 0):
-          filename = output[0].replace("__snakemake_dynamic__", str(int(count / 1000)))
-          handle = open(filename, "w");
-        # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
-        entry.seq = entry.seq.strip("*")
-        Bio.SeqIO.write(entry, handle, "fasta")
-        count += 1
-
-
 rule sprot_blastp_parallel:
   input:
-    'sprot_blastp/proteome{blastp_index}.fasta',
+    'parallel/annotation_pep/{index}.pep',
     'db/uniprot_sprot.fasta'
   output:
-    'sprot_blastp/proteome{blastp_index}_sprot_blastp.out'
+    'parallel/annotations/{index}_sprot_blastp.out'
   log:
-    'logs/log_sprot_blastp{blastp_index}.txt'
+    'logs/log_sprot_blastp_{index}.txt'
   params:
     memory="4"
   threads:
@@ -340,54 +345,14 @@ rule sprot_blastp_parallel:
     """
 
 
-rule sprot_blastp_merge:
-  input:
-    dynamic('sprot_blastp/proteome{blastp_index}_sprot_blastp.out')
-  output:
-    'sprot_blastp/sprot_blastp.out'
-  #log:
-  #  'logs/log_sprot_blastp_merge.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  shell:
-    """
-    cat {input} > {output}
-    """
-
-
-rule sprot_blastx_split:
-  input:
-    'transcriptome.fasta'
-  output:
-    dynamic('sprot_blastx/proteome{blastx_index}.fasta')
-  #log:
-  #    'logs/log_fasta_split.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  run:
-    with open(input[0], "r") as input_handle:
-      parser = Bio.SeqIO.parse(input_handle, "fasta")
-      count = 0
-      for entry in parser:
-        if (count % 1000 == 0):
-          filename = output[0].replace("__snakemake_dynamic__", str(int(count / 1000)))
-          handle = open(filename, "w");
-        Bio.SeqIO.write(entry, handle, "fasta")
-        count += 1
-
-
 rule sprot_blastx_parallel:
   input:
-    'sprot_blastx/proteome{blastx_index}.fasta',
+    'parallel/annotation_fasta/{index}.fasta',
     'db/uniprot_sprot.fasta'
   output:
-    'sprot_blastx/proteome{blastx_index}_sprot_blastx.out'
+    'parallel/annotations/{index}_sprot_blastx.out'
   log:
-    'logs/log_sprot_blastx{blastx_index}.txt'
+    'logs/log_sprot_blastx_{index}.txt'
   params:
     memory="4"
   threads:
@@ -398,55 +363,13 @@ rule sprot_blastx_parallel:
     """
 
 
-rule sprot_blastx_merge:
-  input:
-    dynamic('sprot_blastx/proteome{blastx_index}_sprot_blastx.out')
-  output:
-    'sprot_blastx/sprot_blastx.out'
-  #log:
-  #  'logs/log_sprot_blastx_merge.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  shell:
-    """
-    cat {input} > {output}
-    """
-
-
-rule tmhmm_split:
-  input:
-    'transcriptome.pep'
-  output:
-    dynamic('tmhmm/proteome{tmhmm_index}.fasta')
-  #log:
-  #    'logs/log_pep_split.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  run:
-    with open(input[0], "r") as input_handle:
-      parser = Bio.SeqIO.parse(input_handle, "fasta")
-      count = 0
-      for entry in parser:
-        if (count % 1000 == 0):
-          filename = output[0].replace("__snakemake_dynamic__", str(int(count / 1000)))
-          handle = open(filename, "w");
-        # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
-        entry.seq = entry.seq.strip("*")
-        Bio.SeqIO.write(entry, handle, "fasta")
-        count += 1
-
-
 rule tmhmm_parallel:
   input:
-    'tmhmm/proteome{tmhmm_index}.fasta',
+    'parallel/annotation_pep/{index}.pep'
   output:
-    'tmhmm/proteome{tmhmm_index}_tmhmm.out'
+    'parallel/annotations/{index}_tmhmm.out'
   log:
-    'logs/log_tmhmm{tmhmm_index}.txt'
+    'logs/log_tmhmm_{index}.txt'
   params:
     memory="2"
   threads:
@@ -457,55 +380,13 @@ rule tmhmm_parallel:
     """
 
 
-rule tmhmm_merge:
-  input:
-    dynamic('tmhmm/proteome{tmhmm_index}_tmhmm.out')
-  output:
-    'tmhmm/tmhmm.out'
-  log:
-    'logs/log_tmhmm_merge.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  shell:
-    """
-    cat {input} > {output}
-    """
-
-
-rule signalp_split:
-  input:
-    'transcriptome.pep'
-  output:
-    dynamic('signalp/proteome{signalp_index}.fasta')
-  #log:
-  #    'logs/log_pep_split.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  run:
-    with open(input[0], "r") as input_handle:
-      parser = Bio.SeqIO.parse(input_handle, "fasta")
-      count = 0
-      for entry in parser:
-        if (count % 1000 == 0):
-          filename = output[0].replace("__snakemake_dynamic__", str(int(count / 1000)))
-          handle = open(filename, "w");
-        # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
-        entry.seq = entry.seq.strip("*")
-        Bio.SeqIO.write(entry, handle, "fasta")
-        count += 1
-
-
 rule signalp_parallel:
   input:
-    'signalp/proteome{signalp_index}.fasta',
+    'parallel/annotation_pep/{index}.pep'
   output:
-    'signalp/proteome{signalp_index}_signalp.out'
+    'parallel/annotations/{index}_signalp.out'
   log:
-    'logs/log_signalp{signalp_index}.txt'
+    'logs/log_signalp_{index}.txt'
   params:
     memory="2"
   threads:
@@ -513,23 +394,6 @@ rule signalp_parallel:
   shell:
     """
     signalp -t {SIGNALP_ORGANISM} -f short {input} > {output}
-    """
-
-
-rule signalp_merge:
-  input:
-    dynamic('signalp/proteome{signalp_index}_signalp.out')
-  output:
-    'signalp/signalp.out'
-  log:
-    'logs/log_signalp_merge.txt'
-  params:
-    memory="2"
-  threads:
-    1
-  shell:
-    """
-    cat {input} > {output}
     """
 
 
@@ -575,12 +439,11 @@ rule annotated_fasta:
     'transcriptome.fasta',
     'transcriptome.pep',
     'transcriptome_expression_isoform.tsv',
-    'transrate_results/transcriptome/contigs.csv',
-    'sprot_blastx/sprot_blastx.out',
-    'sprot_blastp/sprot_blastp.out',
-    'pfam/pfam.out',
-    'tmhmm/tmhmm.out',
-    'signalp/signalp.out'
+    'annotations_fasta/sprot_blastx.out',
+    'annotations_pep/sprot_blastp.out',
+    'annotations_pep/pfam.out',
+    'annotations_pep/tmhmm.out',
+    'annotations_pep/signalp.out'
   output:
     'transcriptome_annotated.fasta',
     'transcriptome_annotated.pep'
@@ -606,19 +469,9 @@ rule annotated_fasta:
           annotation += " " + columns[i] + "=" + str(row[i])
         transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
 
-    ## Load transrate results
-    print ("Loading transrate results from", input[3])
-    with open(input[3]) as input_handle:
-      csv_reader = csv.reader(input_handle, delimiter=',')
-      columns = next(csv_reader)
-      for row in csv_reader:
-        if (len(row) < 18): continue
-        annotation = "transrate: " + columns[5] + "=" + str(row[5]) + " " + columns[7] + "=" + str(row[7])
-        transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
-
     ## Load blastx results
-    print ("Loading blastx results from", input[4])
-    with open(input[4]) as input_handle:
+    print ("Loading blastx results from", input[3])
+    with open(input[3]) as input_handle:
       csv_reader = csv.reader(input_handle, delimiter='\t')
       for row in csv_reader:
         if (len(row) < 13): continue
@@ -626,8 +479,8 @@ rule annotated_fasta:
         transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
 
     ## Load blastp results
-    print ("Loading blastp results from", input[5])
-    with open(input[5]) as input_handle:
+    print ("Loading blastp results from", input[4])
+    with open(input[4]) as input_handle:
       csv_reader = csv.reader(input_handle, delimiter='\t')
       for row in csv_reader:
         if (len(row) < 13): continue
@@ -635,8 +488,8 @@ rule annotated_fasta:
         protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
 
     ## Load pfam results
-    print ("Loading pfam predictions from", input[6])
-    with open(input[6]) as input_handle:
+    print ("Loading pfam predictions from", input[5])
+    with open(input[5]) as input_handle:
       for line in input_handle:
         if (line.startswith("#")): continue
         row = re.split(" +", line, 22)
@@ -645,8 +498,8 @@ rule annotated_fasta:
         protein_annotations[row[3]] = protein_annotations.get(row[3], "") + "<br>" + annotation
 
     ## Load tmhmm results
-    print ("Loading tmhmm predictions from", input[7])
-    with open(input[7]) as input_handle:
+    print ("Loading tmhmm predictions from", input[6])
+    with open(input[6]) as input_handle:
       csv_reader = csv.reader(input_handle, delimiter='\t')
       for row in csv_reader:
         if (len(row) < 6): continue
@@ -654,8 +507,8 @@ rule annotated_fasta:
         protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
     
     ## Load signalp results
-    print ("Loading signalp predictions from", input[8])
-    with open(input[8]) as input_handle:
+    print ("Loading signalp predictions from", input[7])
+    with open(input[7]) as input_handle:
       csv_reader = csv.reader(input_handle, delimiter='\t')
       for row in csv_reader:
         if (len(row) < 9): continue
@@ -680,8 +533,7 @@ rule annotated_fasta:
 rule transcriptome_TPM_blast_table:
   input:
     'transcriptome_expression_isoform.tsv',
-    'transrate_results/transcriptome/contigs.csv',
-    'sprot_blastx/sprot_blastx.out'
+    'annotations_fasta/sprot_blastx.out'
   output:
     'transcriptome_TPM_blast.csv'
   log:
@@ -692,21 +544,11 @@ rule transcriptome_TPM_blast_table:
     1
   run:
     ## Annotation map: transcript id -> description
-    transrate_pgood_annotations = {}
     blastx_annotations = {}
 
-    ## Load transrate results
-    print ("Loading transrate results from", input[1])
-    with open(input[1]) as input_handle:
-      csv_reader = csv.reader(input_handle, delimiter=',')
-      transrate_columns = next(csv_reader)
-      for row in csv_reader:
-        if (len(row) < 18): continue
-        transrate_pgood_annotations[row[0]] = row[5]
-
     ## Load blastx results
-    print ("Loading blastx results from", input[2])
-    with open(input[2]) as input_handle:
+    print ("Loading blastx results from", input[1])
+    with open(input[1]) as input_handle:
       csv_reader = csv.reader(input_handle, delimiter='\t')
       for row in csv_reader:
         if (len(row) < 13): continue
@@ -720,11 +562,9 @@ rule transcriptome_TPM_blast_table:
       for i in range(1, len(csv_columns)):
         csv_columns[i] = "TPM(" + csv_columns[i] + ")"
       csv_columns.append("blastx")
-      csv_columns.append("transrate pgood")
       csv_writer.writerow(csv_columns)
       for row in csv_reader:
         row.append(blastx_annotations.get(row[0], ""))
-        row.append(transrate_pgood_annotations.get(row[0], ""))
         csv_writer.writerow(row)
 
  
