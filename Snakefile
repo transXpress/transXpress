@@ -11,20 +11,7 @@ shell.prefix("set -euo pipefail;")
 
 configfile: "config.yaml"
 
-
-# Note: there is another signalp in /usr/local/bin, but that one will crash with > 10000 sequences
-SIGNALP_ORGANISM="euk"
-
-
 TRINITY_HOME=os.path.dirname(shutil.which("Trinity"))
-
-STRAND_SPECIFIC = "" # --SS_lib_type RF
-
-TRINITY_PARAMS = " --seqType fq"
-TRINITY_PARAMS += " --trimmomatic --quality_trimming_params \"ILLUMINACLIP:" + TRINITY_HOME + "/trinity-plugins/Trimmomatic/adapters/TruSeq3-PE-2.fa:3:30:10 SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:25\""
-TRINITY_PARAMS += " " + STRAND_SPECIFIC
- 
-# may consider changing TRINITY_PARAMS += "  --min_kmer_cov 1 --min_glue 2  --no_normalize_reads"
 
 # https://github.com/griffithlab/rnaseq_tutorial/wiki/Trinity-Assembly-And-Analysis
 
@@ -64,7 +51,7 @@ rule trinity_inchworm_chrysalis:
     16
   shell:
     """
-    Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {TRINITY_PARAMS} 2>&1 > {log}
+    Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} 2>&1 > {log}
     """
 
 
@@ -127,7 +114,7 @@ rule trinity_butterfly_merge:
   shell:
     """
     cp -n {input.cmds} {output.cmds_completed} 2> {log}
-    Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {TRINITY_PARAMS} 2>&1 >> {log}
+    Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} 2>&1 >> {log}
     mv trinity_out_dir/Trinity.fasta {output.transcriptome} 2>> {log}
     mv trinity_out_dir/Trinity.fasta.gene_trans_map {output.gene_trans_map} 2>> {log}
     """
@@ -209,7 +196,7 @@ rule align_reads:
     16
   shell:
     """
-    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} {STRAND_SPECIFIC} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]}
+    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]}
     # samtools sort -l 9 -@ {threads} -T  ??? ???/bowtie2.bam > bowtie2.sorted.bam
     # samtools index bowtie2.sorted.bam
     """
@@ -292,7 +279,6 @@ rule annotation_merge_fasta:
     1
   shell:
     """
-    echo input is {input}
     cat {input} > {output}
     """
 
@@ -310,7 +296,6 @@ rule annotation_merge_orfs:
     1
   shell:
     """
-    echo input is {input}
     cat {input} > {output}
     """
 
@@ -399,7 +384,7 @@ rule signalp_parallel:
     1
   shell:
     """
-    signalp -t {SIGNALP_ORGANISM} -f short {input} > {output}
+    signalp -t {config[signalp_organism]} -f short {input} > {output}
     """
 
 
@@ -419,7 +404,7 @@ rule kallisto:
     8
   shell:
     """
-    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {STRAND_SPECIFIC} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} 2>&1 > {log}
+    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} 2>&1 > {log}
     {TRINITY_HOME}/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv 2>&1 >> {log}
     if [ -f kallisto.isoform.TMM.EXPR.matrix ]; then
       cp kallisto.isoform.TMM.EXPR.matrix {output[0]}
