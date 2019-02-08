@@ -51,7 +51,7 @@ rule trinity_inchworm_chrysalis:
     16
   shell:
     """
-    Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} 2>&1 > {log}
+    Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} &> {log}
     """
 
 
@@ -68,8 +68,8 @@ checkpoint trinity_butterfly_split:
     1
   shell:
     """
-    mkdir -p {output} 2> {log}
-    split -l 100 {input} {output}/job_ 2> {log}
+    mkdir -p {output} &> {log}
+    split -l 100 {input} {output}/job_ &>> {log}
     """
 
 
@@ -86,8 +86,8 @@ rule trinity_butterfly_parallel:
     1
   shell:
     """
-    bash {input} 2> {log}
-    cp {input} {output} 2> {log}
+    bash {input} &> {log}
+    cp {input} {output} &>> {log}
     """
 
 def trinity_completed_parallel_jobs(wildcards):
@@ -113,10 +113,10 @@ rule trinity_butterfly_merge:
     16
   shell:
     """
-    cp -n {input.cmds} {output.cmds_completed} 2> {log}
-    Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} 2>&1 >> {log}
-    mv trinity_out_dir/Trinity.fasta {output.transcriptome} 2>> {log}
-    mv trinity_out_dir/Trinity.fasta.gene_trans_map {output.gene_trans_map} 2>> {log}
+    cp -n {input.cmds} {output.cmds_completed} &> {log}
+    Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
+    mv trinity_out_dir/Trinity.fasta {output.transcriptome} &>> {log}
+    mv trinity_out_dir/Trinity.fasta.gene_trans_map {output.gene_trans_map} &>> {log}
     """
 
 
@@ -138,7 +138,7 @@ rule trinity_stats:
     """
     {TRINITY_HOME}/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
     {TRINITY_HOME}/util/misc/contig_ExN50_statistic.pl {input.expression} {input.transcriptome} > {output.exN50} 2>> {log}
-    {TRINITY_HOME}/util/misc/plot_ExN50_statistic.Rscript {output.exN50} 2>> {log}
+    {TRINITY_HOME}/util/misc/plot_ExN50_statistic.Rscript {output.exN50} &>> {log}
     """
 
 
@@ -155,9 +155,9 @@ rule transdecoder_longorfs:
     1
   shell:
     """
-    rm -rf {input.transcriptome}.transdecoder_dir
-    TransDecoder.LongOrfs -t {input.transcriptome} 2>&1 > {log} 
-    cp transcriptome.fasta.transdecoder_dir/longest_orfs.pep {output.orfs} 2>&1 >> {log}
+    rm -rf {input.transcriptome}.transdecoder_dir &> {log}
+    TransDecoder.LongOrfs -t {input.transcriptome} &>> {log} 
+    cp transcriptome.fasta.transdecoder_dir/longest_orfs.pep {output.orfs} &>> {log}
     """
 
 
@@ -176,8 +176,8 @@ rule transdecoder_predict:
     1
   shell:
     """
-    TransDecoder.Predict -t {input.transcriptome} --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} 2>&1 > {log}
-    mv {input.transcriptome}.transdecoder.cds {output} 2>&1 >> {log}
+    TransDecoder.Predict -t {input.transcriptome} --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
+    mv {input.transcriptome}.transdecoder.cds {output} &>> {log}
     """
 
 
@@ -196,7 +196,7 @@ rule align_reads:
     16
   shell:
     """
-    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]}
+    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &> {log}
     # samtools sort -l 9 -@ {threads} -T  ??? ???/bowtie2.bam > bowtie2.sorted.bam
     # samtools index bowtie2.sorted.bam
     """
@@ -279,7 +279,7 @@ rule annotation_merge_fasta:
     1
   shell:
     """
-    cat {input} > {output}
+    cat {input} > {output} 2> {log}
     """
 
 
@@ -296,7 +296,7 @@ rule annotation_merge_orfs:
     1
   shell:
     """
-    cat {input} > {output}
+    cat {input} > {output} 2> {log}
     """
 
 
@@ -314,7 +314,7 @@ rule pfam_parallel:
     2
   shell:
     """
-    hmmscan --cpu {threads} --tblout {output} {input[1]} {input[0]}
+    hmmscan --cpu {threads} --tblout {output} {input[1]} {input[0]} &> {log}
     """
 
 
@@ -332,7 +332,7 @@ rule sprot_blastp_parallel:
     2
   shell:
     """
-    blastp -query {input[0]} -db {input[1]} -num_threads {threads} -evalue 1e-10 -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output}
+    blastp -query {input[0]} -db {input[1]} -num_threads {threads} -evalue 1e-10 -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
     """
 
 
@@ -350,7 +350,7 @@ rule sprot_blastx_parallel:
     2
   shell:
     """
-    blastx -query {input[0]} -db {input[1]} -num_threads {threads} -evalue 1e-6 -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output}
+    blastx -query {input[0]} -db {input[1]} -num_threads {threads} -evalue 1e-6 -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
     """
 
 
@@ -367,7 +367,7 @@ rule tmhmm_parallel:
     1
   shell:
     """
-    tmhmm --short < {input} > {output}
+    tmhmm --short < {input} > {output} 2> {log}
     """
 
 
@@ -384,7 +384,7 @@ rule signalp_parallel:
     1
   shell:
     """
-    signalp -t {config[signalp_organism]} -f short {input} > {output}
+    signalp -t {config[signalp_organism]} -f short {input} > {output} 2> {log}
     """
 
 
@@ -404,20 +404,20 @@ rule kallisto:
     8
   shell:
     """
-    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} 2>&1 > {log}
-    {TRINITY_HOME}/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv 2>&1 >> {log}
+    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+    {TRINITY_HOME}/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv &>> {log}
     if [ -f kallisto.isoform.TMM.EXPR.matrix ]; then
-      cp kallisto.isoform.TMM.EXPR.matrix {output[0]}
+      cp kallisto.isoform.TMM.EXPR.matrix {output[0]} &>> {log}
     elif [ -f kallisto.isoform.TPM.not_cross_norm ]; then
-      cp kallisto.isoform.TPM.not_cross_norm {output[0]} 
+      cp kallisto.isoform.TPM.not_cross_norm {output[0]} &>> {log}
     else
       echo Neither kallisto.isoform.TMM.EXPR.matrix or kallisto.isoform.TPM.not_cross_norm were produced
       exit 1
     fi
     if [ -f kallisto.gene.TMM.EXPR.matrix ]; then
-      cp kallisto.gene.TMM.EXPR.matrix {output[1]}
+      cp kallisto.gene.TMM.EXPR.matrix {output[1]} &>> {log}
     elif [ -f kallisto.gene.TPM.not_cross_norm ]; then
-      cp kallisto.gene.TPM.not_cross_norm {output[1]} 
+      cp kallisto.gene.TPM.not_cross_norm {output[1]} &>> {log}
     else
       echo Neither kallisto.gene.TMM.EXPR.matrix or kallisto.gene.TPM.not_cross_norm were produced
       exit 1
@@ -570,9 +570,9 @@ rule download_sprot:
     1
   shell:
     """
-    wget --directory-prefix db "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" 2>&1 > {log}
-    gunzip db/uniprot_sprot.fasta.gz 2>&1 >> {log}
-    makeblastdb -in db/uniprot_sprot.fasta -dbtype prot 2>&1 >> {log}
+    wget --directory-prefix db "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" &> {log}
+    gunzip db/uniprot_sprot.fasta.gz &>> {log}
+    makeblastdb -in db/uniprot_sprot.fasta -dbtype prot &>> {log}
     """
 
 
@@ -587,9 +587,9 @@ rule download_pfam:
     1
   shell:
     """
-    wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz" 2>&1 > {log}
-    gunzip db/Pfam-A.hmm.gz 2>&1 >> {log}
-    hmmpress db/Pfam-A.hmm 2>&1 >> {log}
+    wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz" &> {log}
+    gunzip db/Pfam-A.hmm.gz &>> {log}
+    hmmpress db/Pfam-A.hmm &>> {log}
     """
 
 
@@ -604,8 +604,8 @@ rule download_eggnog:
     1
   shell:
     """
-    wget --directory-prefix db "http://eggnogdb.embl.de/download/latest/data/NOG/NOG.annotations.tsv.gz" 2>&1 > {log}
-    gunzip db/NOG.annotations.tsv.gz 2>&1 >> {log}
+    wget --directory-prefix db "http://eggnogdb.embl.de/download/latest/data/NOG/NOG.annotations.tsv.gz" &> {log}
+    gunzip db/NOG.annotations.tsv.gz &>> {log}
     """
 
 
