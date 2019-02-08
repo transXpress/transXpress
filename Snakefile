@@ -229,7 +229,7 @@ checkpoint fasta_split:
   threads:
     1
   run:
-    # os.makedirs(output[0], exist_ok=True)
+    os.makedirs(output[0], exist_ok=True)
     with open(input[0], "r") as input_handle:
       parser = Bio.SeqIO.parse(input_handle, "fasta")
       output_handle = None
