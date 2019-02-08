@@ -30,8 +30,8 @@ rule clean:
   shell:
     """
     rm -rf trinity_* tmp* log* TMHMM* tmhmm* kallisto* transcriptome* proteome* pfam* sprot* signalp* parallel* pipeliner* annotation*
-    if [ -f config[samples_file] ]; then
-      cut -f 2 < config[samples_file] | xargs --no-run-if-empty rm -rf
+    if [ -f {config[samples_file]} ]; then
+      cut -f 2 < {config[samples_file]} | xargs --no-run-if-empty rm -rf
     fi
     """
 
