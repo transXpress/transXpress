@@ -30,15 +30,15 @@ rule clean:
   shell:
     """
     rm -rf trinity_* tmp* log* TMHMM* tmhmm* kallisto* transcriptome* proteome* pfam* sprot* signalp* parallel* pipeliner* annotation*
-    if [ -f samples.txt ]; then
-      cut -f 2 < samples.txt | xargs --no-run-if-empty rm -rf
+    if [ -f config[samples_file] ]; then
+      cut -f 2 < config[samples_file] | xargs --no-run-if-empty rm -rf
     fi
     """
 
 
 rule trinity_inchworm_chrysalis:
   input:
-    "samples.txt"
+    samples=config["samples_file"],
   output:
     "trinity_out_dir/recursive_trinity.cmds"
   log:
@@ -96,8 +96,7 @@ def trinity_completed_parallel_jobs(wildcards):
 
 rule trinity_butterfly_merge:
   input:
-    samples="samples.txt",
-    cmds="trinity_out_dir/recursive_trinity.cmds",
+    samples=config["samples_file"],
     jobs=trinity_completed_parallel_jobs
   output:
     cmds_completed="trinity_out_dir/recursive_trinity.cmds.completed",
@@ -111,7 +110,7 @@ rule trinity_butterfly_merge:
     16
   shell:
     """
-    cp -n {input.cmds} {output.cmds_completed} &> {log}
+    cat {input.jobs} > {output.cmds_completed} 2> {log}
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     mv trinity_out_dir/Trinity.fasta {output.transcriptome} &>> {log}
     mv trinity_out_dir/Trinity.fasta.gene_trans_map {output.gene_trans_map} &>> {log}
@@ -181,9 +180,9 @@ rule transdecoder_predict:
 
 rule align_reads:
   input:
-    "samples.txt",
-    "transcriptome.fasta",
-    "transcriptome.gene_trans_map"
+    samples=config["samples_file"],
+    transcriptome="transcriptome.fasta",
+    gene_trans_map="transcriptome.gene_trans_map"
   output:
     "RSEM_out.gene.TMM.EXPR.matrix"
   log:
@@ -202,8 +201,8 @@ rule align_reads:
 
 rule trinity_DE:
   input:
-    "samples.txt",
-    "kallisto.gene.counts.matrix"
+    samples=config["samples_file"],
+    expression="kallisto.gene.counts.matrix"
   output:
     "edgeR_trans"
   log:
@@ -230,7 +229,7 @@ checkpoint fasta_split:
   threads:
     1
   run:
-    os.makedirs(output[0], exist_ok=True)
+    # os.makedirs(output[0], exist_ok=True)
     with open(input[0], "r") as input_handle:
       parser = Bio.SeqIO.parse(input_handle, "fasta")
       output_handle = None
@@ -388,7 +387,7 @@ rule signalp_parallel:
 
 rule kallisto:
   input:
-    samples="samples.txt",
+    samples=config["samples_file"],
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map"
   output:
