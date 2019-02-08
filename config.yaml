@@ -3,11 +3,12 @@
 #                                        cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
 #                                        cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
 #                                        cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
-samples_file: samples.txt
+# Note: must avoid spaces in filenames in samples.txt
+samples_file: "samples.txt"
 
 
 # may consider canging TRINITY_PARAMS += "  --min_kmer_cov 1 --min_glue 2  --no_normalize_reads"
-trinity_parameters: --seqType fq --trimmomatic --quality_trimming_params "ILLUMINACLIP:adapters.fasta:3:30:10 SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:25"
+trinity_parameters: "--seqType fq --trimmomatic --quality_trimming_params 'ILLUMINACLIP:adapters.fasta:3:30:10 SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:25'"
 
 # Strand-specific RNA-Seq read orientation.
 # if paired: RF or FR,
@@ -20,5 +21,5 @@ strand_specific: ""
 annotated_fasta_prefix: ""
 
 # SignalP model
-signalp_organism: euk
+signalp_organism: "euk"
 

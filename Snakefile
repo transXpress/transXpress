@@ -1,5 +1,3 @@
-# Note: must avoid spaces in filenames in samples.txt
-
 import os
 import shutil
 import re
@@ -445,80 +443,85 @@ rule annotated_fasta:
   threads:
     1
   run:
-    ## Annotation map: transcript id -> description
-    transcript_annotations = {}
-    protein_annotations = {}
-
-    ## Load kallisto results
-    print ("Loading expression values from", input[2])
-    with open(input[2]) as input_handle:
-      csv_reader = csv.reader(input_handle, delimiter="\t")
-      columns = next(csv_reader)
-      for row in csv_reader:
-        annotation = "TPM:"
-        for i in range(1, len(columns)):
-          annotation += " " + columns[i] + "=" + str(row[i])
-        transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
-
-    ## Load blastx results
-    print ("Loading blastx results from", input[3])
-    with open(input[3]) as input_handle:
-      csv_reader = csv.reader(input_handle, delimiter="\t")
-      for row in csv_reader:
-        if (len(row) < 13): continue
-        annotation = "blastx: sp" + row[1] + " " + row[12] + "; e=" + str(row[10])
-        transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
-
-    ## Load blastp results
-    print ("Loading blastp results from", input[4])
-    with open(input[4]) as input_handle:
-      csv_reader = csv.reader(input_handle, delimiter="\t")
-      for row in csv_reader:
-        if (len(row) < 13): continue
-        annotation = "blastp: sp" + row[1] + " " + row[12] + "; e=" + str(row[10])
-        protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
-
-    ## Load pfam results
-    print ("Loading pfam predictions from", input[5])
-    with open(input[5]) as input_handle:
-      for line in input_handle:
-        if (line.startswith("#")): continue
-        row = re.split(" +", line, 22)
-        if (len(row) < 23): continue
-        annotation = "pfam: " + row[1] + " " + row[22] + "; e=" + str(row[6])
-        protein_annotations[row[3]] = protein_annotations.get(row[3], "") + "<br>" + annotation
-
-    ## Load tmhmm results
-    print ("Loading tmhmm predictions from", input[6])
-    with open(input[6]) as input_handle:
-      csv_reader = csv.reader(input_handle, delimiter="\t")
-      for row in csv_reader:
-        if (len(row) < 6): continue
-        annotation = "tmhmm: " + row[2] + "; " + row[3] + "; " + row[4] + "; " + row[5]
-        protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
-    
-    ## Load signalp results
-    print ("Loading signalp predictions from", input[7])
-    with open(input[7]) as input_handle:
-      csv_reader = csv.reader(input_handle, delimiter="\t")
-      for row in csv_reader:
-        if (len(row) < 9): continue
-        annotation = "signalp: " + str(row[5]) 
-        protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
-    
-    ## Do the work
-    print ("Annotating FASTA file", input[0], "to", output[0])
-    with open(input[0], "r") as input_fasta_handle, open(output[0], "w") as output_fasta_handle:
-      for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
-        record.description = transcript_annotations.get(record.id, "")
-        Bio.SeqIO.write(record, output_fasta_handle, "fasta")
-    
-    print ("Annotating FASTA file", input[1], "to", output[1])
-    with open(input[1], "r") as input_fasta_handle, open(output[1], "w") as output_fasta_handle:
-      for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
-        transcript_id = re.sub("\.p[0-9]+$", "", record.id)
-        record.description = transcript_annotations.get(transcript_id, "") + protein_annotations.get(record.id, "")
-        Bio.SeqIO.write(record, output_fasta_handle, "fasta")
+    # Open log file
+    with open(log[0], "w") as log_handle:
+      ## Annotation map: transcript id -> description
+      transcript_annotations = {}
+      protein_annotations = {}
+  
+      ## Load kallisto results
+      print ("Loading expression values from", input[2], file=log_handle)
+      with open(input[2]) as input_handle:
+        csv_reader = csv.reader(input_handle, delimiter="\t")
+        columns = next(csv_reader)
+        for row in csv_reader:
+          annotation = "TPM:"
+          for i in range(1, len(columns)):
+            annotation += " " + columns[i] + "=" + str(row[i])
+          transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
+  
+      ## Load blastx results
+      print ("Loading blastx results from", input[3], file=log_handle)
+      with open(input[3]) as input_handle:
+        csv_reader = csv.reader(input_handle, delimiter="\t")
+        for row in csv_reader:
+          if (len(row) < 13): continue
+          annotation = "blastx: " + row[12] + " e=" + str(row[10])
+          transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
+  
+      ## Load blastp results
+      print ("Loading blastp results from", input[4], file=log_handle)
+      with open(input[4]) as input_handle:
+        csv_reader = csv.reader(input_handle, delimiter="\t")
+        for row in csv_reader:
+          if (len(row) < 13): continue
+          annotation = "blastp: " + row[12] + " e=" + str(row[10])
+          protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
+  
+      ## Load pfam results
+      print ("Loading pfam predictions from", input[5], file=log_handle)
+      with open(input[5]) as input_handle:
+        for line in input_handle:
+          if (line.startswith("#")): continue
+          row = re.split(" +", line, 22)
+          if (len(row) < 23): continue
+          annotation = "pfam: " + row[1] + " " + row[22] + " e=" + str(row[6])
+          protein_annotations[row[3]] = protein_annotations.get(row[3], "") + "<br>" + annotation
+  
+      ## Load tmhmm results
+      print ("Loading tmhmm predictions from", input[6], file=log_handle)
+      with open(input[6]) as input_handle:
+        csv_reader = csv.reader(input_handle, delimiter="\t")
+        for row in csv_reader:
+          if (len(row) < 6): continue
+          annotation = "tmhmm: " + row[2] + "; " + row[3] + "; " + row[4] + "; " + row[5]
+          protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
+      
+      ## Load signalp results
+      print ("Loading signalp predictions from", input[7], file=log_handle)
+      with open(input[7]) as input_handle:
+        csv_reader = csv.reader(input_handle, delimiter=" ", skipinitialspace=True)
+        for row in csv_reader:
+          if (len(row) < 9): continue
+          annotation = "signalp: " + str(row[5]) 
+          protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
+      
+      ## Do the work
+      print ("Annotating FASTA file", input[0], "to", output[0], file=log_handle)
+      with open(input[0], "r") as input_fasta_handle, open(output[0], "w") as output_fasta_handle:
+        for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
+          record.description = transcript_annotations.get(record.id, "")
+          Bio.SeqIO.write(record, output_fasta_handle, "fasta")
+      
+      print ("Annotating FASTA file", input[1], "to", output[1], file=log_handle)
+      with open(input[1], "r") as input_fasta_handle, open(output[1], "w") as output_fasta_handle:
+        for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
+          transcript_id = re.sub("\.p[0-9]+$", "", record.id)
+          record.description = transcript_annotations.get(transcript_id, "") + protein_annotations.get(record.id, "")
+          # Add sequence ID prefix from configuration
+          if config["annotated_fasta_prefix"]:
+            record.id = config["annotated_fasta_prefix"] + "|" + record.id
+          Bio.SeqIO.write(record, output_fasta_handle, "fasta")
 
 
 rule transcriptome_TPM_blast_table:
@@ -534,29 +537,32 @@ rule transcriptome_TPM_blast_table:
   threads:
     1
   run:
-    ## Annotation map: transcript id -> description
-    blastx_annotations = {}
-
-    ## Load blastx results
-    print ("Loading blastx results from", input[1])
-    with open(input[1]) as input_handle:
-      csv_reader = csv.reader(input_handle, delimiter="\t")
-      for row in csv_reader:
-        if (len(row) < 13): continue
-        blastx_annotations[row[0]] = row[12] + "; e=" + str(row[10])
     
-    with open(input[0], "r") as input_csv_handle, open(output[0], "w") as output_csv_handle:
-      csv_reader = csv.reader(input_csv_handle, delimiter="\t")
-      csv_writer = csv.writer(output_csv_handle, delimiter=",")
-      csv_columns = next(csv_reader)
-      csv_columns[0] = "transcript"
-      for i in range(1, len(csv_columns)):
-        csv_columns[i] = "TPM(" + csv_columns[i] + ")"
-      csv_columns.append("blastx")
-      csv_writer.writerow(csv_columns)
-      for row in csv_reader:
-        row.append(blastx_annotations.get(row[0], ""))
-        csv_writer.writerow(row)
+    # Open log file
+    with open(log[0], "w") as log_handle:
+      ## Annotation map: transcript id -> description
+      blastx_annotations = {}
+
+      ## Load blastx results
+      print ("Loading blastx results from", input[1], file=log_handle)
+      with open(input[1]) as input_handle:
+        csv_reader = csv.reader(input_handle, delimiter="\t")
+        for row in csv_reader:
+          if (len(row) < 13): continue
+          blastx_annotations[row[0]] = row[12] + " e=" + str(row[10])
+    
+      with open(input[0], "r") as input_csv_handle, open(output[0], "w") as output_csv_handle:
+        csv_reader = csv.reader(input_csv_handle, delimiter="\t")
+        csv_writer = csv.writer(output_csv_handle, delimiter=",")
+        csv_columns = next(csv_reader)
+        csv_columns[0] = "transcript"
+        for i in range(1, len(csv_columns)):
+          csv_columns[i] = "TPM(" + csv_columns[i] + ")"
+        csv_columns.append("blastx")
+        csv_writer.writerow(csv_columns)
+        for row in csv_reader:
+          row.append(blastx_annotations.get(row[0], ""))
+          csv_writer.writerow(row)
 
  
 rule download_sprot:
