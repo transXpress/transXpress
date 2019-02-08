@@ -250,43 +250,20 @@ checkpoint fasta_split:
         output_handle.close()
         
 
-def parallel_annotation_orfs(wildcards):
-  parallel_dir = checkpoints.fasta_split.get(extension="orfs").output[0]
-  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}.orfs")).index
-  completed_files = expand("parallel/{task}/{index}.out",index=job_ids, task=wildcards["task"])
-  return completed_files
-
-def parallel_annotation_fasta(wildcards):
-  parallel_dir = checkpoints.fasta_split.get(extension="fasta").output[0]
-  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}.fasta")).index
+def parallel_annotation_tasks(wildcards):
+  parallel_dir = checkpoints.fasta_split.get(**wildcards).output[0]
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}." + wildcards["extension"])).index
   completed_files = expand("parallel/{task}/{index}.out",index=job_ids, task=wildcards["task"])
   return completed_files
 
 
 rule annotation_merge_fasta:
   input:
-    parallel_annotation_fasta
+    parallel_annotation_tasks
   output:
-    "annotations_fasta/{task}.out"
+    "annotations_{extension}/{task}.out"
   log:
-    "logs/log_{task}_merge.txt"
-  params:
-    memory="2"
-  threads:
-    1
-  shell:
-    """
-    cat {input} > {output} 2> {log}
-    """
-
-
-rule annotation_merge_orfs:
-  input:
-    parallel_annotation_orfs
-  output:
-    "annotations_orfs/{task}.out"
-  log:
-    "logs/log_{task}_merge.txt"
+    "logs/log_{extension}_{task}_merge.txt"
   params:
     memory="2"
   threads:
