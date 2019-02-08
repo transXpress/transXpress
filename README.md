@@ -14,4 +14,8 @@ Requires
 
 ## Usage
 
+~~~~
+snakemake --config samples_file=samples_file.txt
+~~~~
+
 
