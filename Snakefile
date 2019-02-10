@@ -240,7 +240,6 @@ checkpoint fasta_split:
             output_handle.close()
           fileindex = str(int(count / 1000) + 1);
           filename = os.path.join(output[0], fileindex + "." + wildcards.extension)
-          print("Writing to file " + filename)
           output_handle = open(filename, "w");
         # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
         entry.seq = entry.seq.strip("*")
