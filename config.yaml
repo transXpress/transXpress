@@ -19,7 +19,3 @@ strand_specific: ""
 
 # Can be used for species name etc
 annotated_fasta_prefix: ""
-
-# SignalP model
-signalp_organism: "euk"
-

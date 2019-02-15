@@ -1,3 +1,7 @@
+# TODO:
+# annotations should be performed after Transdecoder.Predict
+
+
 import os
 import shutil
 import re
@@ -29,7 +33,7 @@ rule all:
 rule clean:
   shell:
     """
-    rm -rf trinity_* tmp* log* TMHMM* tmhmm* kallisto* transcriptome* proteome* pfam* sprot* signalp* parallel* pipeliner* annotation*
+    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* parallel* pipeliner* annotation*
     if [ -f {config[samples_file]} ]; then
       cut -f 2 < {config[samples_file]} | xargs --no-run-if-empty rm -rf
     fi
@@ -174,7 +178,7 @@ rule transdecoder_predict:
   shell:
     """
     TransDecoder.Predict -t {input.transcriptome} --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
-    mv {input.transcriptome}.transdecoder.cds {output} &>> {log}
+    mv {input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
 
 
@@ -231,10 +235,9 @@ checkpoint fasta_split:
   run:
     os.makedirs(output[0], exist_ok=True)
     with open(input[0], "r") as input_handle:
-      parser = Bio.SeqIO.parse(input_handle, "fasta")
       output_handle = None
       count = 0
-      for entry in parser:
+      for record in Bio.SeqIO.parse(input_handle, "fasta"):
         if (count % 1000 == 0):
           if output_handle is not None:
             output_handle.close()
@@ -242,8 +245,10 @@ checkpoint fasta_split:
           filename = os.path.join(output[0], fileindex + "." + wildcards.extension)
           output_handle = open(filename, "w");
         # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
-        entry.seq = entry.seq.strip("*")
-        Bio.SeqIO.write(entry, output_handle, "fasta")
+        record.seq = record.seq.strip("*")
+        # String the description, because some tools (e.g. deeploc) include it in their output
+        record.description = ""
+        Bio.SeqIO.write(record, output_handle, "fasta")
         count += 1
       if output_handle is not None:
         output_handle.close()
@@ -344,20 +349,21 @@ rule tmhmm_parallel:
     """
 
 
-rule signalp_parallel:
+rule deeploc_parallel:
   input:
     "parallel/annotation_orfs/{index}.orfs"
   output:
-    "parallel/signalp/{index}.out"
+    "parallel/deeploc/{index}.out"
   log:
-    "logs/log_signalp_{index}.txt"
+    "logs/log_deeploc_{index}.txt"
   params:
     memory="2"
   threads:
     1
   shell:
     """
-    signalp -t {config[signalp_organism]} -f short {input} > {output} 2> {log}
+    deeploc -f {input} -o {output} &> {log}
+    mv {output}.txt {output} &>> {log}
     """
 
 
@@ -407,7 +413,7 @@ rule annotated_fasta:
     "annotations_orfs/sprot_blastp.out",
     "annotations_orfs/pfam.out",
     "annotations_orfs/tmhmm.out",
-    "annotations_orfs/signalp.out"
+    "annotations_orfs/deeploc.out"
   output:
     "transcriptome_annotated.fasta",
     "transcriptome_annotated.pep"
@@ -472,13 +478,13 @@ rule annotated_fasta:
           annotation = "tmhmm: " + row[2] + "; " + row[3] + "; " + row[4] + "; " + row[5]
           protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
       
-      ## Load signalp results
-      print ("Loading signalp predictions from", input[7], file=log_handle)
+      ## Load deeploc results
+      print ("Loading deeploc predictions from", input[7], file=log_handle)
       with open(input[7]) as input_handle:
-        csv_reader = csv.reader(input_handle, delimiter=" ", skipinitialspace=True)
+        csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
-          if (len(row) < 9): continue
-          annotation = "signalp: " + str(row[5]) 
+          if (len(row) < 2): continue
+          annotation = "deeploc: " + str(row[1])
           protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
       
       ## Do the work
