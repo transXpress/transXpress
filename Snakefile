@@ -71,7 +71,7 @@ checkpoint trinity_butterfly_split:
   shell:
     """
     mkdir -p {output} &> {log}
-    split -l 100 {input} {output}/job_ &>> {log}
+    split -d -l 100 {input} {output}/job_ &>> {log}
     """
 
 
