@@ -1,5 +1,6 @@
 # TODO:
 # annotations should be performed after Transdecoder.Predict
+# keep transdecoder status
 
 
 import os
@@ -439,7 +440,7 @@ rule annotated_fasta:
           annotation = "TPM:"
           for i in range(1, len(columns)):
             annotation += " " + columns[i] + "=" + str(row[i])
-          transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
+          transcript_annotations[row[0]] = annotation
   
       ## Load blastx results
       print ("Loading blastx results from", input[3], file=log_handle)
@@ -464,10 +465,10 @@ rule annotated_fasta:
       with open(input[5]) as input_handle:
         for line in input_handle:
           if (line.startswith("#")): continue
-          row = re.split(" +", line, 22)
-          if (len(row) < 23): continue
-          annotation = "pfam: " + row[1] + " " + row[22] + " e=" + str(row[6])
-          protein_annotations[row[3]] = protein_annotations.get(row[3], "") + "<br>" + annotation
+          row = re.split(" +", line, 18)
+          if (len(row) < 19): continue
+          annotation = "pfam: " + row[1] + " " + row[18] + " e=" + str(row[4])
+          protein_annotations[row[2]] = protein_annotations.get(row[2], "") + "<br>" + annotation
   
       ## Load tmhmm results
       print ("Loading tmhmm predictions from", input[6], file=log_handle)
