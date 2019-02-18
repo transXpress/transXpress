@@ -279,6 +279,23 @@ rule annotation_merge_fasta:
     """
 
 
+rule rfam_parallel:
+  input:
+    "parallel/annotation_fasta/{index}.fasta",
+    "db/Rfam.cm"
+  output:
+    "parallel/rfam/{index}.out"
+  log:
+    "logs/log_rfam_{index}.txt"
+  params:
+    memory="2"
+  threads:
+    2
+  shell:
+    """
+    cmscan -E 0.00001 --incE 0.00001 --rfam --cpu {threads} --tblout {output} {input[1]} {input[0]} &> {log}
+    """
+
 rule pfam_parallel:
   input:
     "parallel/annotation_orfs/{index}.orfs",
@@ -407,17 +424,19 @@ rule kallisto:
 
 rule annotated_fasta:
   input:
-    "transcriptome.fasta",
-    "transcriptome.pep",
-    "transcriptome_expression_isoform.tsv",
-    "annotations_fasta/sprot_blastx.out",
-    "annotations_orfs/sprot_blastp.out",
-    "annotations_orfs/pfam.out",
-    "annotations_orfs/tmhmm.out",
-    "annotations_orfs/deeploc.out"
+    transcriptome="transcriptome.fasta",
+    proteome="transcriptome.pep",
+    expression="transcriptome_expression_isoform.tsv",
+    blastx_results="annotations_fasta/sprot_blastx.out",
+    rfam_results="annotations_fasta/rfam.out",
+    blastp_results="annotations_orfs/sprot_blastp.out",
+    pfam_results="annotations_orfs/pfam.out",
+    tmhmm_results="annotations_orfs/tmhmm.out",
+    deeploc_results="annotations_orfs/deeploc.out"
   output:
-    "transcriptome_annotated.fasta",
-    "transcriptome_annotated.pep"
+    transcriptome_annotated="transcriptome_annotated.fasta",
+    proteome_annotated="transcriptome_annotated.pep",
+    tpm_blast_table="transcriptome_TPM_blast.csv"
   log:
     "logs/log_annotated_fasta.txt"
   params:
@@ -428,112 +447,111 @@ rule annotated_fasta:
     # Open log file
     with open(log[0], "w") as log_handle:
       ## Annotation map: transcript id -> description
-      transcript_annotations = {}
-      protein_annotations = {}
+      expression_annotations = {}
+      blastx_annotations = {}
+      blastp_annotations = {}
+      pfam_annotations = {}
+      rfam_annotations = {}
+      tmhmm_annotations = {}
+      deeploc_annotations = {}
   
       ## Load kallisto results
       print ("Loading expression values from", input[2], file=log_handle)
-      with open(input[2]) as input_handle:
-        csv_reader = csv.reader(input_handle, delimiter="\t")
+      with open(input["expression"]) as input_handle:
+        csv_reader = csv.reader(input_handle, delimiter='\t')
         columns = next(csv_reader)
         for row in csv_reader:
-          annotation = "TPM:"
-          for i in range(1, len(columns)):
-            annotation += " " + columns[i] + "=" + str(row[i])
-          transcript_annotations[row[0]] = annotation
-  
+          expression_annotations[row[0]] = columns[1] + "=" + str(row[1])
+          for i in range(2, len(columns)):
+            expression_annotations[row[0]] += " " + columns[i] + "=" + str(row[i])
+
       ## Load blastx results
       print ("Loading blastx results from", input[3], file=log_handle)
-      with open(input[3]) as input_handle:
+      with open(input["blastx_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
           if (len(row) < 13): continue
-          annotation = "blastx: " + row[12] + " e=" + str(row[10])
-          transcript_annotations[row[0]] = transcript_annotations.get(row[0], "") + "<br>" + annotation
+          blastx_annotations[row[0]] = row[12] + ", e=" + str(row[10])
   
       ## Load blastp results
       print ("Loading blastp results from", input[4], file=log_handle)
-      with open(input[4]) as input_handle:
+      with open(input["blastp_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
           if (len(row) < 13): continue
-          annotation = "blastp: " + row[12] + " e=" + str(row[10])
-          protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
+          blastp_annotations[row[0]] = row[12] + ", e=" + str(row[10])
+
   
       ## Load pfam results
       print ("Loading pfam predictions from", input[5], file=log_handle)
-      with open(input[5]) as input_handle:
+      with open(input["pfam_results"]) as input_handle:
         for line in input_handle:
           if (line.startswith("#")): continue
           row = re.split(" +", line, 18)
           if (len(row) < 19): continue
-          annotation = "pfam: " + row[1] + " " + row[18] + " e=" + str(row[4])
-          protein_annotations[row[2]] = protein_annotations.get(row[2], "") + "<br>" + annotation
+          pfam_annotations[row[2]] = row[1] + " " + row[18] + ", e=" + str(row[7])
+
+      ## Load rfam results
+      print ("Loading rfam predictions from", input[5], file=log_handle)
+      with open(input["rfam_results"]) as input_handle:
+        for line in input_handle:
+          if (line.startswith("#")): continue
+          row = re.split(" +", line, 17)
+          if (len(row) < 18): continue
+          rfam_annotations[row[2]] = row[1] + " " + row[17] + ", e=" + str(row[15])
   
       ## Load tmhmm results
       print ("Loading tmhmm predictions from", input[6], file=log_handle)
-      with open(input[6]) as input_handle:
+      with open(input["tmhmm_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
           if (len(row) < 6): continue
-          annotation = "tmhmm: " + row[2] + "; " + row[3] + "; " + row[4] + "; " + row[5]
-          protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
+          tmhmm_annotations[row[0]] = row[2] + ", " + row[3] + ", " + row[4] + ", " + row[5]
       
       ## Load deeploc results
       print ("Loading deeploc predictions from", input[7], file=log_handle)
-      with open(input[7]) as input_handle:
+      with open(input["deeploc_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
           if (len(row) < 2): continue
-          annotation = "deeploc: " + str(row[1])
-          protein_annotations[row[0]] = protein_annotations.get(row[0], "") + "<br>" + annotation
+          deeploc_annotations[row[0]] = str(row[1])
       
       ## Do the work
       print ("Annotating FASTA file", input[0], "to", output[0], file=log_handle)
-      with open(input[0], "r") as input_fasta_handle, open(output[0], "w") as output_fasta_handle:
+      with open(input["transcriptome"], "r") as input_fasta_handle, open(output["transcriptome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
-          record.description = transcript_annotations.get(record.id, "")
+          transcript_id = record.id
+          record.description = "TPM: " + expression_annotations.get(transcript_id)
+          if transcript_id in blastx_annotations:
+            record.description += "; blastx: " + blastx_annotations.get(transcript_id)
+          if transcript_id in rfam_annotations:
+            record.description += "; rfam: " + rfam_annotations.get(transcript_id)
           Bio.SeqIO.write(record, output_fasta_handle, "fasta")
       
       print ("Annotating FASTA file", input[1], "to", output[1], file=log_handle)
-      with open(input[1], "r") as input_fasta_handle, open(output[1], "w") as output_fasta_handle:
+      with open(input["proteome"], "r") as input_fasta_handle, open(output["proteome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
-          transcript_id = re.sub("\.p[0-9]+$", "", record.id)
-          record.description = transcript_annotations.get(transcript_id, "") + protein_annotations.get(record.id, "")
+          transcript_id = re.sub("\\.p[0-9]+\$", "", record.id)
+          record.description = "transdecoder " + re.search("ORF type:[^,]+,score=[^,]+", record.description).group(0)
+          if transcript_id in expression_annotations:
+            record.description += "; TPM: " + expression_annotations.get(transcript_id)
+          if record.id in blastp_annotations:
+            record.description += "; blastp: " + blastp_annotations.get(record.id)
+          if record.id in pfam_annotations:
+            record.description += "; pfam: " + pfam_annotations.get(record.id)
+          if transcript_id in rfam_annotations:
+            record.description += "; rfam: " + rfam_annotations.get(transcript_id)
+          if record.id in tmhmm_annotations:
+            record.description += "; tmhmm: " + tmhmm_annotations.get(record.id)
+          if record.id in deeploc_annotations:
+            record.description += "; deeploc: " + deeploc_annotations.get(record.id)
           # Add sequence ID prefix from configuration
           if config["annotated_fasta_prefix"]:
             record.id = config["annotated_fasta_prefix"] + "|" + record.id
           Bio.SeqIO.write(record, output_fasta_handle, "fasta")
 
-
-rule transcriptome_TPM_blast_table:
-  input:
-    "transcriptome_expression_isoform.tsv",
-    "annotations_fasta/sprot_blastx.out"
-  output:
-    "transcriptome_TPM_blast.csv"
-  log:
-    "logs/log_transcriptome_TPM_blast_table.txt"
-  params:
-    memory="2"
-  threads:
-    1
-  run:
-    
-    # Open log file
-    with open(log[0], "w") as log_handle:
-      ## Annotation map: transcript id -> description
-      blastx_annotations = {}
-
-      ## Load blastx results
-      print ("Loading blastx results from", input[1], file=log_handle)
-      with open(input[1]) as input_handle:
-        csv_reader = csv.reader(input_handle, delimiter="\t")
-        for row in csv_reader:
-          if (len(row) < 13): continue
-          blastx_annotations[row[0]] = row[12] + " e=" + str(row[10])
-    
-      with open(input[0], "r") as input_csv_handle, open(output[0], "w") as output_csv_handle:
+      print ("Generating transcriptome_TPM_blast.csv table", file=log_handle)
+      with open(input["expression"], "r") as input_csv_handle, open(output["tpm_blast_table"], "w") as output_csv_handle:
         csv_reader = csv.reader(input_csv_handle, delimiter="\t")
         csv_writer = csv.writer(output_csv_handle, delimiter=",")
         csv_columns = next(csv_reader)
@@ -578,6 +596,23 @@ rule download_pfam:
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz" &> {log}
     gunzip db/Pfam-A.hmm.gz &>> {log}
     hmmpress db/Pfam-A.hmm &>> {log}
+    """
+
+
+rule download_rfam:
+  output:
+    "db/Rfam.cm"
+  log:
+    "logs/log_download_rfam.txt"
+  params:
+    memory="2"
+  threads:
+    1
+  shell:
+    """
+    wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz" &> {log}
+    gunzip db/Rfam.cm.gz &>> {log}
+    cmpress db/Rfam.cm &>> {log}
     """
 
 
