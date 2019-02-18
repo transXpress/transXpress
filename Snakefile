@@ -1,7 +1,3 @@
-# TODO:
-# annotations should be performed after Transdecoder.Predict
-
-
 import os
 import shutil
 import re
@@ -116,8 +112,8 @@ rule trinity_butterfly_merge:
     """
     cat {input.jobs} > {output.cmds_completed} 2> {log}
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
-    mv trinity_out_dir/Trinity.fasta {output.transcriptome} &>> {log}
-    mv trinity_out_dir/Trinity.fasta.gene_trans_map {output.gene_trans_map} &>> {log}
+    cp trinity_out_dir/Trinity.fasta {output.transcriptome} &>> {log}
+    cp trinity_out_dir/Trinity.fasta.gene_trans_map {output.gene_trans_map} &>> {log}
     """
 
 
@@ -165,8 +161,8 @@ rule transdecoder_longorfs:
 rule transdecoder_predict:
   input:
     transcriptome="transcriptome.fasta",
-    pfam="annotations_orfs/pfam.out",
-    blastp="annotations_orfs/sprot_blastp.out"
+    pfam="annotations/pfamtransdecoder_orfs.out",
+    blastp="annotations/sprot_blastp_orfs.out"
   output:
     "transcriptome.pep"
   log:
@@ -178,7 +174,7 @@ rule transdecoder_predict:
   shell:
     """
     TransDecoder.Predict -t {input.transcriptome} --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
-    mv {input.transcriptome}.transdecoder.pep {output} &>> {log}
+    cp {input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
 
 
@@ -265,9 +261,9 @@ rule annotation_merge_fasta:
   input:
     parallel_annotation_tasks
   output:
-    "annotations_{extension}/{task}.out"
+    "annotations/{task}_{extension}.out"
   log:
-    "logs/log_{extension}_{task}_merge.txt"
+    "logs/log_{task}_{extension}_merge.txt"
   params:
     memory="2"
   threads:
@@ -297,7 +293,7 @@ rule rfam_parallel:
 
 rule pfam_parallel:
   input:
-    "parallel/annotation_orfs/{index}.orfs",
+    "parallel/annotation_pep/{index}.pep",
     "db/Pfam-A.hmm"
   output:
     "parallel/pfam/{index}.out"
@@ -312,10 +308,46 @@ rule pfam_parallel:
     hmmscan -E {config[e_value_threshold]} --cpu {threads} --tblout {output} {input[1]} {input[0]} &> {log}
     """
 
+# Transdecoder requires --domtblout output
+rule pfam_transdecoder_parallel:
+  input:
+    "parallel/annotation_orfs/{index}.orfs",
+    "db/Pfam-A.hmm"
+  output:
+    "parallel/pfamtransdecoder/{index}.out"
+  log:
+    "logs/log_pfamtransdecoder_{index}.txt"
+  params:
+    memory="2"
+  threads:
+    2
+  shell:
+    """
+    hmmscan --cpu {threads} --domtblout {output} {input[1]} {input[0]} &> {log}
+    """
+
+
+rule sprot_blastp_parallelorfs:
+  input:
+    "parallel/annotation_orfs/{index}.orfs",
+    "db/uniprot_sprot.fasta"
+  output:
+    "parallel/sprot_blastp/{index}.out"
+  log:
+    "logs/log_sprot_blastp_{index}.txt"
+  params:
+    memory="4"
+  threads:
+    2
+  shell:
+    """
+    blastp -query {input[0]} -db {input[1]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
+    """
+
 
 rule sprot_blastp_parallel:
   input:
-    "parallel/annotation_orfs/{index}.orfs",
+    "parallel/annotation_pep/{index}.pep",
     "db/uniprot_sprot.fasta"
   output:
     "parallel/sprot_blastp/{index}.out"
@@ -351,7 +383,7 @@ rule sprot_blastx_parallel:
 
 rule tmhmm_parallel:
   input:
-    "parallel/annotation_orfs/{index}.orfs"
+    "parallel/annotation_pep/{index}.pep"
   output:
     "parallel/tmhmm/{index}.out"
   log:
@@ -368,7 +400,7 @@ rule tmhmm_parallel:
 
 rule deeploc_parallel:
   input:
-    "parallel/annotation_orfs/{index}.orfs"
+    "parallel/annotation_pep/{index}.pep"
   output:
     "parallel/deeploc/{index}.out"
   log:
@@ -493,12 +525,12 @@ rule annotated_fasta:
     transcriptome="transcriptome.fasta",
     proteome="transcriptome.pep",
     expression="transcriptome_expression_isoform.tsv",
-    blastx_results="annotations_fasta/sprot_blastx.out",
-    rfam_results="annotations_fasta/rfam.out",
-    blastp_results="annotations_orfs/sprot_blastp.out",
-    pfam_results="annotations_orfs/pfam.out",
-    tmhmm_results="annotations_orfs/tmhmm.out",
-    deeploc_results="annotations_orfs/deeploc.out"
+    blastx_results="annotations/sprot_blastx_fasta.out",
+    rfam_results="annotations/rfam_fasta.out",
+    blastp_results="annotations/sprot_blastp_pep.out",
+    pfam_results="annotations/pfam_pep.out",
+    tmhmm_results="annotations/tmhmm_pep.out",
+    deeploc_results="annotations/deeploc_pep.out"
   output:
     transcriptome_annotated="transcriptome_annotated.fasta",
     proteome_annotated="transcriptome_annotated.pep",
@@ -537,7 +569,7 @@ rule annotated_fasta:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
           if (len(row) < 13): continue
-          blastx_annotations[row[0]] = row[12] + "E=" + str(row[10])
+          blastx_annotations[row[0]] = row[12] + " E=" + str(row[10])
   
       ## Load blastp results
       print ("Loading blastp results from", input[4], file=log_handle)
@@ -545,9 +577,8 @@ rule annotated_fasta:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
           if (len(row) < 13): continue
-          blastp_annotations[row[0]] = row[12] + "E=" + str(row[10])
+          blastp_annotations[row[0]] = row[12] + " E=" + str(row[10])
 
-  
       ## Load pfam results
       print ("Loading pfam predictions from", input[5], file=log_handle)
       with open(input["pfam_results"]) as input_handle:
@@ -572,7 +603,7 @@ rule annotated_fasta:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
           if (len(row) < 6): continue
-          tmhmm_annotations[row[0]] = row[2] + ", " + row[3] + ", " + row[4] + ", " + row[5]
+          tmhmm_annotations[row[0]] = row[2] + " " + row[3] + " " + row[4] + " " + row[5]
       
       ## Load deeploc results
       print ("Loading deeploc predictions from", input[7], file=log_handle)
