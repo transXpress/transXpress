@@ -332,9 +332,9 @@ rule sprot_blastp_parallelorfs:
     "parallel/annotation_orfs/{index}.orfs",
     "db/uniprot_sprot.fasta"
   output:
-    "parallel/sprot_blastp/{index}.out"
+    "parallel/sprot_blastp_orfs/{index}.out"
   log:
-    "logs/log_sprot_blastp_{index}.txt"
+    "logs/log_sprot_blastp_orfs_{index}.txt"
   params:
     memory="4"
   threads:
@@ -350,9 +350,9 @@ rule sprot_blastp_parallel:
     "parallel/annotation_pep/{index}.pep",
     "db/uniprot_sprot.fasta"
   output:
-    "parallel/sprot_blastp/{index}.out"
+    "parallel/sprot_blastp_pep/{index}.out"
   log:
-    "logs/log_sprot_blastp_{index}.txt"
+    "logs/log_sprot_blastp_pep_{index}.txt"
   params:
     memory="4"
   threads:
