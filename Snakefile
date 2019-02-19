@@ -67,7 +67,7 @@ checkpoint trinity_butterfly_split:
   shell:
     """
     mkdir -p {output} &> {log}
-    split -d -l 100 {input} {output}/job_ &>> {log}
+    split --numeric-suffixes=1 -l 100 {input} {output}/job_ &>> {log}
     """
 
 
@@ -162,7 +162,7 @@ rule transdecoder_predict:
   input:
     transcriptome="transcriptome.fasta",
     pfam="annotations/pfamtransdecoder_orfs.out",
-    blastp="annotations/sprot_blastp_orfs.out"
+    blastp="annotations/sprotblastporfs_orfs.out"
   output:
     "transcriptome.pep"
   log:
@@ -241,7 +241,8 @@ checkpoint fasta_split:
           filename = os.path.join(output[0], fileindex + "." + wildcards.extension)
           output_handle = open(filename, "w");
         # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
-        record.seq = record.seq.strip("*")
+        if wildcards["extension"] == "pep":
+          record.seq = record.seq.strip("*")
         # String the description, because some tools (e.g. deeploc) include it in their output
         record.description = ""
         Bio.SeqIO.write(record, output_handle, "fasta")
@@ -323,7 +324,7 @@ rule pfam_transdecoder_parallel:
     2
   shell:
     """
-    hmmscan --cpu {threads} --domtblout {output} {input[1]} {input[0]} &> {log}
+    hmmscan -E {config[e_value_threshold]} --cpu {threads} --domtblout {output} {input[1]} {input[0]} &> {log}
     """
 
 
@@ -332,9 +333,9 @@ rule sprot_blastp_parallelorfs:
     "parallel/annotation_orfs/{index}.orfs",
     "db/uniprot_sprot.fasta"
   output:
-    "parallel/sprot_blastp_orfs/{index}.out"
+    "parallel/sprotblastporfs/{index}.out"
   log:
-    "logs/log_sprot_blastp_orfs_{index}.txt"
+    "logs/log_sprotblastporfs_{index}.txt"
   params:
     memory="4"
   threads:
@@ -345,14 +346,14 @@ rule sprot_blastp_parallelorfs:
     """
 
 
-rule sprot_blastp_parallel:
+rule sprot_blastp_parallelpep:
   input:
     "parallel/annotation_pep/{index}.pep",
     "db/uniprot_sprot.fasta"
   output:
-    "parallel/sprot_blastp_pep/{index}.out"
+    "parallel/sprotblastppep/{index}.out"
   log:
-    "logs/log_sprot_blastp_pep_{index}.txt"
+    "logs/log_sprotblastppep_{index}.txt"
   params:
     memory="4"
   threads:
@@ -368,9 +369,9 @@ rule sprot_blastx_parallel:
     "parallel/annotation_fasta/{index}.fasta",
     "db/uniprot_sprot.fasta"
   output:
-    "parallel/sprot_blastx/{index}.out"
+    "parallel/sprotblastx/{index}.out"
   log:
-    "logs/log_sprot_blastx_{index}.txt"
+    "logs/log_sprotblastx_{index}.txt"
   params:
     memory="4"
   threads:
@@ -525,9 +526,9 @@ rule annotated_fasta:
     transcriptome="transcriptome.fasta",
     proteome="transcriptome.pep",
     expression="transcriptome_expression_isoform.tsv",
-    blastx_results="annotations/sprot_blastx_fasta.out",
+    blastx_results="annotations/sprotblastx_fasta.out",
     rfam_results="annotations/rfam_fasta.out",
-    blastp_results="annotations/sprot_blastp_pep.out",
+    blastp_results="annotations/sprotblastppep_pep.out",
     pfam_results="annotations/pfam_pep.out",
     tmhmm_results="annotations/tmhmm_pep.out",
     deeploc_results="annotations/deeploc_pep.out"
