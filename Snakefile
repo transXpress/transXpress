@@ -153,8 +153,8 @@ rule transdecoder_longorfs:
   shell:
     """
     rm -rf {input.transcriptome}.transdecoder_dir &> {log}
-    TransDecoder.LongOrfs -t {input.transcriptome} &>> {log} 
-    cp transcriptome.fasta.transdecoder_dir/longest_orfs.pep {output.orfs} &>> {log}
+    TransDecoder.LongOrfs -t {input.transcriptome} --output_dir transdecoder &>> {log} 
+    cp transdecoder/longest_orfs.pep {output.orfs} &>> {log}
     """
 
 
@@ -173,7 +173,7 @@ rule transdecoder_predict:
     1
   shell:
     """
-    TransDecoder.Predict -t {input.transcriptome} --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
+    TransDecoder.Predict -t {input.transcriptome} --output_dir transdecoder --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
     cp {input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
 
