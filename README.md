@@ -15,6 +15,9 @@ Requires
 * infernal (install via conda)
 * deeploc (install via conda)
 * HMMER (install via conda)
+* kallisto (install via conda)
+* [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/releases)
+* [TransDecoder](https://github.com/TransDecoder/TransDecoder/releases)
 * [R](https://www.r-project.org)
 * [NCBI BLAST+](ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
 * basic Linux utitilies: wget, split, awk
@@ -23,7 +26,7 @@ Requires
 
 1. Install miniconda: https://conda.io/en/latest/miniconda.html
 2. Install snakemake and other dependencies:
-```conda install -c bioconda -c conda-forge snakemake biopython samtools bowtie2 infernal deeploc HMMER```
+```conda install -c bioconda -c conda-forge snakemake biopython samtools bowtie2 infernal deeploc HMMER kallisto perl-uri```
 
 ## Usage
 
