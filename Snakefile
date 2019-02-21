@@ -277,8 +277,8 @@ rule annotation_merge_fasta:
 
 rule rfam_parallel:
   input:
-    "parallel/annotation_fasta/{index}.fasta",
-    "db/Rfam.cm"
+    fasta="parallel/annotation_fasta/{index}.fasta",
+    db="db/Rfam.cm"
   output:
     "parallel/rfam/{index}.out"
   log:
@@ -289,14 +289,14 @@ rule rfam_parallel:
     2
   shell:
     """
-    cmscan -E {config[e_value_threshold]} --rfam --cpu {threads} --tblout {output} {input[1]} {input[0]} &> {log}
+    cmscan -E {config[e_value_threshold]} --rfam --cpu {threads} --tblout {output} {input[db]} {input[fasta]} &> {log}
     """
 
 # Transdecoder requires --domtblout output
 rule pfam_parallel:
   input:
-    "parallel/annotation_orfs/{index}.orfs",
-    "db/Pfam-A.hmm"
+    fasta="parallel/annotation_orfs/{index}.orfs",
+    db="db/Pfam-A.hmm"
   output:
     "parallel/pfam/{index}.out"
   log:
@@ -307,14 +307,14 @@ rule pfam_parallel:
     2
   shell:
     """
-    hmmscan -E {config[e_value_threshold]} --cpu {threads} --domtblout {output} {input[1]} {input[0]} &> {log}
+    hmmscan -E {config[e_value_threshold]} --cpu {threads} --domtblout {output} {input[db]} {input[fasta]} &> {log}
     """
 
 
-rule sprot_blastp_parallelorfs:
+rule sprot_blastp_parallel:
   input:
-    "parallel/annotation_orfs/{index}.orfs",
-    "db/uniprot_sprot.fasta"
+    fasta="parallel/annotation_orfs/{index}.orfs",
+    db="db/uniprot_sprot.fasta"
   output:
     "parallel/sprotblastp/{index}.out"
   log:
@@ -325,14 +325,14 @@ rule sprot_blastp_parallelorfs:
     2
   shell:
     """
-    blastp -query {input[0]} -db {input[1]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
+    blastp -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
     """
 
 
 rule sprot_blastx_parallel:
   input:
-    "parallel/annotation_fasta/{index}.fasta",
-    "db/uniprot_sprot.fasta"
+    fasta="parallel/annotation_fasta/{index}.fasta",
+    db="db/uniprot_sprot.fasta"
   output:
     "parallel/sprotblastx/{index}.out"
   log:
@@ -343,7 +343,7 @@ rule sprot_blastx_parallel:
     2
   shell:
     """
-    blastx -query {input[0]} -db {input[1]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
+    blastx -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
     """
 
 
