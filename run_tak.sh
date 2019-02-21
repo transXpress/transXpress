@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Required for deeploc, at least in some installations
+# See https://github.com/Theano/Theano/issues/6568
+export MKL_THREADING_LAYER=GNU
+
 export PATH=/usr/local/bin:$PATH
 export PATH=/usr/local/jdk1.8/bin:$PATH
 export PATH=/lab/solexa_weng/testtube/trinityrnaseq-Trinity-v2.8.4:$PATH
