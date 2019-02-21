@@ -29,7 +29,7 @@ rule all:
 rule clean:
   shell:
     """
-    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* parallel* pipeliner* annotation*
+    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* parallel* pipeliner* annotation* transdecoder*
     if [ -f {config[samples_file]} ]; then
       cut -f 2 < {config[samples_file]} | xargs --no-run-if-empty rm -rf
     fi
@@ -161,8 +161,8 @@ rule transdecoder_longorfs:
 rule transdecoder_predict:
   input:
     transcriptome="transcriptome.fasta",
-    pfam="annotations/pfamtransdecoder_orfs.out",
-    blastp="annotations/sprotblastporfs_orfs.out"
+    pfam="annotations/pfam_orfs.out",
+    blastp="annotations/sprotblastp_orfs.out"
   output:
     "transcriptome.pep"
   log:
@@ -292,32 +292,15 @@ rule rfam_parallel:
     cmscan -E {config[e_value_threshold]} --rfam --cpu {threads} --tblout {output} {input[1]} {input[0]} &> {log}
     """
 
+# Transdecoder requires --domtblout output
 rule pfam_parallel:
   input:
-    "parallel/annotation_pep/{index}.pep",
+    "parallel/annotation_orfs/{index}.orfs",
     "db/Pfam-A.hmm"
   output:
     "parallel/pfam/{index}.out"
   log:
     "logs/log_pfam_{index}.txt"
-  params:
-    memory="2"
-  threads:
-    2
-  shell:
-    """
-    hmmscan -E {config[e_value_threshold]} --cpu {threads} --tblout {output} {input[1]} {input[0]} &> {log}
-    """
-
-# Transdecoder requires --domtblout output
-rule pfam_transdecoder_parallel:
-  input:
-    "parallel/annotation_orfs/{index}.orfs",
-    "db/Pfam-A.hmm"
-  output:
-    "parallel/pfamtransdecoder/{index}.out"
-  log:
-    "logs/log_pfamtransdecoder_{index}.txt"
   params:
     memory="2"
   threads:
@@ -333,27 +316,9 @@ rule sprot_blastp_parallelorfs:
     "parallel/annotation_orfs/{index}.orfs",
     "db/uniprot_sprot.fasta"
   output:
-    "parallel/sprotblastporfs/{index}.out"
+    "parallel/sprotblastp/{index}.out"
   log:
-    "logs/log_sprotblastporfs_{index}.txt"
-  params:
-    memory="4"
-  threads:
-    2
-  shell:
-    """
-    blastp -query {input[0]} -db {input[1]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
-    """
-
-
-rule sprot_blastp_parallelpep:
-  input:
-    "parallel/annotation_pep/{index}.pep",
-    "db/uniprot_sprot.fasta"
-  output:
-    "parallel/sprotblastppep/{index}.out"
-  log:
-    "logs/log_sprotblastppep_{index}.txt"
+    "logs/log_sprotblastp{index}.txt"
   params:
     memory="4"
   threads:
@@ -528,8 +493,8 @@ rule annotated_fasta:
     expression="transcriptome_expression_isoform.tsv",
     blastx_results="annotations/sprotblastx_fasta.out",
     rfam_results="annotations/rfam_fasta.out",
-    blastp_results="annotations/sprotblastppep_pep.out",
-    pfam_results="annotations/pfam_pep.out",
+    blastp_results="annotations/sprotblastp_orfs.out",
+    pfam_results="annotations/pfam_orfs.out",
     tmhmm_results="annotations/tmhmm_pep.out",
     deeploc_results="annotations/deeploc_pep.out"
   output:
@@ -585,9 +550,10 @@ rule annotated_fasta:
       with open(input["pfam_results"]) as input_handle:
         for line in input_handle:
           if (line.startswith("#")): continue
-          row = re.split(" +", line, 18)
-          if (len(row) < 19): continue
-          pfam_annotations[row[2]] = row[1] + " " + row[18] + "E=" + str(row[7])
+          row = re.split(" +", line, 22)
+          if (len(row) < 23): continue
+          if row[3] not in pfam_annotations:
+            pfam_annotations[row[3]] = row[1] + " " + row[22] + "E=" + str(row[6])
 
       ## Load rfam results
       print ("Loading rfam predictions from", input[5], file=log_handle)
