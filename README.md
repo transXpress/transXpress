@@ -24,14 +24,19 @@ Requires
 
 ## Installation
 
-1. Install miniconda: https://conda.io/en/latest/miniconda.html
+1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
 2. Install snakemake and other dependencies:
 ```conda install -c bioconda -c conda-forge snakemake biopython samtools bowtie2 infernal HMMER kallisto perl-uri```
 
 ## Usage
 
+Run locally with 10 parallel threads:
 ~~~~
-snakemake --config samples_file=samples_file.txt
+snakemake --cores 10 --config samples_file=samples_file.txt
 ~~~~
 
+Run on an LSF cluster:
+~~~~
+snakemake --latency-wait 60 --jobs 10000 --cluster 'bsub -n {threads} -R "rusage[mem={params.memory}000] span[hosts=1]" -oo {log}.bsub'
+~~~~
 
