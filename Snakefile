@@ -40,7 +40,7 @@ rule trinity_inchworm_chrysalis:
   output:
     "trinity_out_dir/recursive_trinity.cmds"
   log:
-    "logs/log_trinity_inchworm_chrysalis.txt"
+    "logs/trinity_inchworm_chrysalis.log"
   params:
     memory="200"
   threads:
@@ -57,7 +57,7 @@ checkpoint trinity_butterfly_split:
   output:
     directory("trinity_out_dir/parallel_jobs")
   log:
-    "logs/log_trinity_split.txt"
+    "logs/trinity_split.log"
   params:
     memory="10"
   threads:
@@ -75,7 +75,7 @@ rule trinity_butterfly_parallel:
   output:
     "trinity_out_dir/parallel_jobs/completed_{job_index}"
   log:
-    "logs/log_trinity_parallel{job_index}.txt"
+    "logs/trinity_parallel{job_index}.log"
   params:
     memory="10"
   threads:
@@ -101,7 +101,7 @@ rule trinity_butterfly_merge:
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map"
   log:
-    "logs/log_trinity_butterfly_merge.txt"
+    "logs/trinity_butterfly_merge.log"
   params:
     memory="200"
   threads:
@@ -124,7 +124,7 @@ rule trinity_stats:
     exN50="transcriptome_exN50.tsv",
     exN50plot="transcriptome_exN50.tsv.plot.pdf"
   log:
-    "logs/log_trinity_exN50.txt"
+    "logs/trinity_exN50.log"
   params:
     memory="2"
   threads:
@@ -143,7 +143,7 @@ rule transdecoder_longorfs:
   output:
     orfs="transcriptome.orfs"
   log:
-    "logs/log_transdecoder_longorfs.txt"
+    "logs/transdecoder_longorfs.log"
   params:
     memory="2"
   threads:
@@ -164,7 +164,7 @@ rule transdecoder_predict:
   output:
     "transcriptome.pep"
   log:
-    "logs/log_transdecoder_predict.txt"
+    "logs/transdecoder_predict.log"
   params:
     memory="2"
   threads:
@@ -184,7 +184,7 @@ rule align_reads:
   output:
     "RSEM_out.gene.TMM.EXPR.matrix"
   log:
-    "logs/log_bowtie2.txt"
+    "logs/bowtie2.log"
   params:
     memory="100"
   threads:
@@ -204,7 +204,7 @@ rule trinity_DE:
   output:
     "edgeR_trans"
   log:
-    "logs/log_trinity_DE.txt"
+    "logs/trinity_DE.log"
   params:
     memory="2"
   threads:
@@ -221,7 +221,7 @@ checkpoint fasta_split:
   output:
     directory("annotations/chunks_{extension}")
   log:
-    "logs/log_{extension}_split.txt"
+    "logs/{extension}_split.log"
   params:
     memory="2"
   threads:
@@ -262,7 +262,7 @@ rule annotation_merge_fasta:
   output:
     "annotations/{task}_{extension}.out"
   log:
-    "logs/log_{task}_{extension}_merge.txt"
+    "logs/{task}_{extension}_merge.log"
   params:
     memory="2"
   threads:
@@ -280,7 +280,7 @@ rule rfam_parallel:
   output:
     "annotations/rfam/{index}.out"
   log:
-    "logs/log_rfam_{index}.txt"
+    "logs/rfam_{index}.log"
   params:
     memory="2"
   threads:
@@ -298,7 +298,7 @@ rule pfam_parallel:
   output:
     "annotations/pfam/{index}.out"
   log:
-    "logs/log_pfam_{index}.txt"
+    "logs/pfam_{index}.log"
   params:
     memory="2"
   threads:
@@ -316,7 +316,7 @@ rule sprot_blastp_parallel:
   output:
     "annotations/sprotblastp/{index}.out"
   log:
-    "logs/log_sprotblastp{index}.txt"
+    "logs/sprotblastp{index}.log"
   params:
     memory="4"
   threads:
@@ -334,7 +334,7 @@ rule sprot_blastx_parallel:
   output:
     "annotations/sprotblastx/{index}.out"
   log:
-    "logs/log_sprotblastx_{index}.txt"
+    "logs/sprotblastx_{index}.log"
   params:
     memory="4"
   threads:
@@ -351,7 +351,7 @@ rule tmhmm_parallel:
   output:
     "annotations/tmhmm/{index}.out"
   log:
-    "logs/log_tmhmm_{index}.txt"
+    "logs/tmhmm_{index}.log"
   params:
     memory="2"
   threads:
@@ -368,7 +368,7 @@ rule deeploc_parallel:
   output:
     "annotations/deeploc/{index}.out"
   log:
-    "logs/log_deeploc_{index}.txt"
+    "logs/deeploc_{index}.log"
   params:
     memory="2"
   threads:
@@ -389,7 +389,7 @@ rule kallisto:
     "transcriptome_expression_isoform.tsv",
     "transcriptome_expression_gene.tsv"
   log:
-    "logs/log_kallisto.txt"
+    "logs/kallisto.log"
   params:
     memory="2"
   threads:
@@ -421,7 +421,7 @@ rule download_sprot:
   output:
     "db/uniprot_sprot.fasta"
   log:
-    "logs/log_download_sprot.txt"
+    "logs/download_sprot.log"
   params:
     memory="2"
   threads:
@@ -438,7 +438,7 @@ rule download_pfam:
   output:
     "db/Pfam-A.hmm"
   log:
-    "logs/log_download_pfam.txt"
+    "logs/download_pfam.log"
   params:
     memory="2"
   threads:
@@ -455,7 +455,7 @@ rule download_rfam:
   output:
     "db/Rfam.cm"
   log:
-    "logs/log_download_rfam.txt"
+    "logs/download_rfam.log"
   params:
     memory="2"
   threads:
@@ -472,7 +472,7 @@ rule download_eggnog:
   output:
     "db/NOG.annotations.tsv"
   log:
-    "logs/log_download_eggnog.txt"
+    "logs/download_eggnog.log"
   params:
     memory="2"
   threads:
@@ -500,7 +500,7 @@ rule annotated_fasta:
     proteome_annotated="transcriptome_annotated.pep",
     tpm_blast_table="transcriptome_TPM_blast.csv"
   log:
-    "logs/log_annotated_fasta.txt"
+    "logs/annotated_fasta.log"
   params:
     memory="4"
   threads:
