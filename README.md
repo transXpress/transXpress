@@ -19,7 +19,7 @@ Requires
 * kallisto (install via conda)
 * [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
 * [R](https://www.r-project.org)
-* [NCBI BLAST+](ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
+* [NCBI BLAST+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download)
 * basic Linux utitilies: wget, split, awk
 
 ## Installation
