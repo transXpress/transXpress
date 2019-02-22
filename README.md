@@ -52,4 +52,4 @@ snakemake --latency-wait 60 --jobs 10000 --cluster 'bsub -n {threads} -R "rusage
 
 ## Flow
 
-[The directed acyclic execution DAG of transXpress-snakemake-trinity](./tests/dag.svg )
+![The directed acyclic execution DAG of transXpress-snakemake-trinity](./tests/dag.svg )
