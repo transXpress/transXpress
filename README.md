@@ -26,7 +26,11 @@ Requires
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
 2. Install snakemake and other dependencies:  
-```conda install -c bioconda -c conda-forge snakemake trinity transdecoder biopython samtools bowtie2 infernal hmmer kallisto```
+```
+ conda config --add channels bioconda
+ conda config --add channels conda-forge
+ conda install snakemake trinity transdecoder biopython samtools bowtie2 infernal hmmer kallisto
+```
 
 ## Usage
 
