@@ -5,8 +5,6 @@ import csv
 import Bio.SeqIO
 import Bio.Alphabet
 
-shell.prefix("set -euo pipefail;")
-
 configfile: "config.yaml"
 
 TRINITY_HOME=os.path.dirname(shutil.which("Trinity"))
