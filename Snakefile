@@ -29,7 +29,7 @@ rule all:
 rule clean:
   shell:
     """
-    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* parallel* pipeliner* annotation* transdecoder*
+    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder*
     if [ -f {config[samples_file]} ]; then
       cut -f 2 < {config[samples_file]} | xargs --no-run-if-empty rm -rf
     fi
@@ -57,7 +57,7 @@ checkpoint trinity_butterfly_split:
   input:
     "trinity_out_dir/recursive_trinity.cmds"
   output:
-    directory("parallel/trinity_jobs")
+    directory("trinity_out_dir/parallel_jobs")
   log:
     "logs/log_trinity_split.txt"
   params:
@@ -73,9 +73,9 @@ checkpoint trinity_butterfly_split:
 
 rule trinity_butterfly_parallel:
   input:
-    "parallel/trinity_jobs/job_{job_index}"
+    "trinity_out_dir/parallel_jobs/job_{job_index}"
   output:
-    "parallel/trinity_jobs/completed_{job_index}"
+    "trinity_out_dir/parallel_jobs/completed_{job_index}"
   log:
     "logs/log_trinity_parallel{job_index}.txt"
   params:
@@ -221,7 +221,7 @@ checkpoint fasta_split:
   input:
     "transcriptome.{extension}"
   output:
-    directory("parallel/annotation_{extension}")
+    directory("annotations/chunks_{extension}")
   log:
     "logs/log_{extension}_split.txt"
   params:
@@ -254,7 +254,7 @@ checkpoint fasta_split:
 def parallel_annotation_tasks(wildcards):
   parallel_dir = checkpoints.fasta_split.get(**wildcards).output[0]
   job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}." + wildcards["extension"])).index
-  completed_files = expand("parallel/{task}/{index}.out",index=job_ids, task=wildcards["task"])
+  completed_files = expand("annotations/{task}/{index}.out",index=job_ids, task=wildcards["task"])
   return completed_files
 
 
@@ -277,10 +277,10 @@ rule annotation_merge_fasta:
 
 rule rfam_parallel:
   input:
-    fasta="parallel/annotation_fasta/{index}.fasta",
+    fasta="annotations/chunks_fasta/{index}.fasta",
     db="db/Rfam.cm"
   output:
-    "parallel/rfam/{index}.out"
+    "annotations/rfam/{index}.out"
   log:
     "logs/log_rfam_{index}.txt"
   params:
@@ -295,10 +295,10 @@ rule rfam_parallel:
 # Transdecoder requires --domtblout output
 rule pfam_parallel:
   input:
-    fasta="parallel/annotation_orfs/{index}.orfs",
+    fasta="annotations/chunks_orfs/{index}.orfs",
     db="db/Pfam-A.hmm"
   output:
-    "parallel/pfam/{index}.out"
+    "annotations/pfam/{index}.out"
   log:
     "logs/log_pfam_{index}.txt"
   params:
@@ -313,10 +313,10 @@ rule pfam_parallel:
 
 rule sprot_blastp_parallel:
   input:
-    fasta="parallel/annotation_orfs/{index}.orfs",
+    fasta="annotations/chunks_orfs/{index}.orfs",
     db="db/uniprot_sprot.fasta"
   output:
-    "parallel/sprotblastp/{index}.out"
+    "annotations/sprotblastp/{index}.out"
   log:
     "logs/log_sprotblastp{index}.txt"
   params:
@@ -331,10 +331,10 @@ rule sprot_blastp_parallel:
 
 rule sprot_blastx_parallel:
   input:
-    fasta="parallel/annotation_fasta/{index}.fasta",
+    fasta="annotations/chunks_fasta/{index}.fasta",
     db="db/uniprot_sprot.fasta"
   output:
-    "parallel/sprotblastx/{index}.out"
+    "annotations/sprotblastx/{index}.out"
   log:
     "logs/log_sprotblastx_{index}.txt"
   params:
@@ -349,9 +349,9 @@ rule sprot_blastx_parallel:
 
 rule tmhmm_parallel:
   input:
-    "parallel/annotation_pep/{index}.pep"
+    "annotations/chunks_pep/{index}.pep"
   output:
-    "parallel/tmhmm/{index}.out"
+    "annotations/tmhmm/{index}.out"
   log:
     "logs/log_tmhmm_{index}.txt"
   params:
@@ -366,9 +366,9 @@ rule tmhmm_parallel:
 
 rule deeploc_parallel:
   input:
-    "parallel/annotation_pep/{index}.pep"
+    "annotations/chunks_pep/{index}.pep"
   output:
-    "parallel/deeploc/{index}.out"
+    "annotations/deeploc/{index}.out"
   log:
     "logs/log_deeploc_{index}.txt"
   params:
