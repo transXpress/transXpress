@@ -21,7 +21,7 @@ Requires
 * NCBI BLAST+ (install via conda)
 * R (install via conda)
 * [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
-* basic Linux utitilies: wget, split, awk
+* basic Linux utitilies: wget, split, awk, cut, gzip
 
 ## Installation
 
