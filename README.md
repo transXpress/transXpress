@@ -33,6 +33,10 @@ Requires
  conda config --add channels r
  conda install snakemake trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r
 ~~~~
+3. Install deeploc
+      * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
+      * Install dependencies: `pip install -r requirements.txt`
+      * Install deeploc: `python setup.py install` or locally: `python setup.py install --user`
 
 ## Usage
 
