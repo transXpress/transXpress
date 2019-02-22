@@ -13,5 +13,7 @@ echo "Try 'lsof $OUTFILE' if you need to get the process id of the snakemake man
 echo "'tail -f $OUTFILE' will let you see the output of nextflow in real time" | tee -a $OUTFILE 
 echo "transXpress-nextflow dropping to background on host "$HOSTNAME"..." | tee -a $OUTFILE
 
-./run_tak.sh 1>$OUTFILE 2>$ERRFILE &
+./run_tak.sh 1>>$OUTFILE 2>>$ERRFILE &
 disown
+echo "Making dag file...
+snakemake --dag | dot -Tsvg > dag.svg
