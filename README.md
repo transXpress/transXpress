@@ -19,8 +19,8 @@ Requires
 * HMMER (install via conda)
 * kallisto (install via conda)
 * NCBI BLAST+ (install via conda)
+* R (install via conda)
 * [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
-* [R](https://www.r-project.org)
 * basic Linux utitilies: wget, split, awk
 
 ## Installation
@@ -30,7 +30,8 @@ Requires
 ~~~~
  conda config --add channels bioconda
  conda config --add channels conda-forge
- conda install snakemake trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast
+ conda config --add channels r
+ conda install snakemake trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r
 ~~~~
 
 ## Usage
