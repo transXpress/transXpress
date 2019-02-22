@@ -10,6 +10,7 @@ Also see our sister project: [transXpress-nextflow](https://github.com/transXpre
 Requires
 * snakemake 5.4.2+ (install via conda)
 * Trinity (install via conda)
+* SPAdes (install via conda)
 * TransDecoder (install via conda)
 * BioPython (install via conda)
 * samtools (install via conda)
@@ -17,20 +18,20 @@ Requires
 * infernal (install via conda)
 * HMMER (install via conda)
 * kallisto (install via conda)
+* NCBI BLAST+ (install via conda)
 * [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
 * [R](https://www.r-project.org)
-* [NCBI BLAST+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download)
 * basic Linux utitilies: wget, split, awk
 
 ## Installation
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
 2. Install snakemake and other dependencies:  
-```
+~~~~
  conda config --add channels bioconda
  conda config --add channels conda-forge
- conda install snakemake trinity transdecoder biopython samtools bowtie2 infernal hmmer kallisto
-```
+ conda install snakemake trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast
+~~~~
 
 ## Usage
 
