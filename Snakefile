@@ -33,6 +33,57 @@ rule clean:
     fi
     """
 
+# note: trimmomatic can use gzipped files directly
+rule trimmomatic:
+  input:
+    samples=config["samples_file"]
+  output:
+    trimmed_samples="samples_trimmed.txt",
+    trimmed_F_reads="trimmed_F.fq.gz",
+    trimmed_R_reads="trimmed_R.fq.gz",
+    trimmed_U_reads="trimmed_U.fq.gz"
+  log:
+    "logs/samples_yaml_conversion.log"
+  params:
+    memory="2"
+  threads:
+    1
+   shell:
+    """
+    trimmomatic PE -threads {threads}  ${R1_reads} ${R2_reads} ${R1_reads}.R1-P.qtrim.fastq.gz ${R1_reads}.R1-U.qtrim.fastq.gz ${R2_reads}.R2-P.qtrim.fastq.gz ${R2_reads}.R2-U.qtrim.fastq.gz  {config[trimmomatic_parameters]}
+    """
+
+rule samples_yaml_conversion:
+  input:
+    samples=config["samples_file"],
+  output:
+    "samples.yaml"
+  log:
+    "logs/samples_yaml_conversion.log"
+  params:
+    memory="2"
+  threads:
+    1
+  shell:
+    """
+    echo "[{
+        orientation: "fr",
+        type: "paired-end",
+        right reads: [" >datasets.yaml
+    ls -1 ./*.R1-P.qtrim.fastq.gz | sed 's/^/\\"/g' | sed 's/\$/\\"/g' | sed 's/@\"/\\"/g' | tr "\\n" "," | sed 's/,\$//g' >>datasets.yaml
+    echo "]," >> datasets.yaml
+    echo "left reads: [" >> datasets.yaml
+    ls -1 ./*.R2-P.qtrim.fastq.gz | sed 's/^/\\"/g' | sed 's/\$/\\"/g' | sed 's/@\"/\\"/g' | tr "\\n" "," | sed 's/,\$//g' >>datasets.yaml
+    echo "]
+      }," >>datasets.yaml
+    echo "{
+        type: "single",
+         single reads: [" >> datasets.yaml
+    ls -1 ./*U.qtrim.fastq.gz | sed 's/^/\\"/g' | sed 's/\$/\\"/g' | sed 's/@\"/\\"/g' | tr "\\n" "," | sed 's/,\$//g' >>datasets.yaml
+    echo "]}]" >> datasets.yaml
+    """
+
+
 
 rule trinity_inchworm_chrysalis:
   input:
