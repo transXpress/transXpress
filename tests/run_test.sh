@@ -14,14 +14,14 @@
 #echo "transXpress-nextflow dropping to background on host "$HOSTNAME"..." | tee -a $OUTFILE
 
 if [ ! -z `which bsub` ]; then
- CLUSTER_PARAMS=--latency-wait 60 --jobs 10000 --cluster 'bsub -oo {log}.bsub -n {threads} -R rusage[mem={params.memory}000] -R span[hosts=1]'
+ CLUSTER_PARAMS="--latency-wait 60 --jobs 10000 --cluster 'bsub -oo {log}.bsub -n {threads} -R rusage[mem={params.memory}000] -R span[hosts=1]'"
 else
  CLUSTER_PARAMS="--cores 8"
 fi
 
 echo "Running snakemake"
-snakemake --snakefile ../Snakefile $CLUSTER_PARAMS "$@"
+snakemake --snakefile ../Snakefile-trinity $CLUSTER_PARAMS "$@"
 
 echo "Making DAG file"
-snakemake --snakefile ../Snakefile --dag | dot -Tsvg > dag.svg
+snakemake --snakefile ../Snakefile-trinity --dag | dot -Tsvg > dag.svg
 

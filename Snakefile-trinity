@@ -4,6 +4,9 @@ import re
 import csv
 import Bio.SeqIO
 import Bio.Alphabet
+from snakemake.utils import min_version
+
+min_version("5.4")
 
 configfile: "config.yaml"
 
