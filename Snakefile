@@ -27,10 +27,10 @@ rule all:
 rule clean:
   shell:
     """
-    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder*
-    if [ -f {config[samples_file]} ]; then
-      cut -f 2 < {config[samples_file]} | xargs --no-run-if-empty rm -rf
+    if [ -f {samples_trimmed.txt} ]; then
+      cut -f 2 < {samples_trimmed.txt} | xargs --no-run-if-empty rm -rf
     fi
+    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed*
     """
 
 
@@ -66,34 +66,33 @@ rule trimmomatic_parallel:
     4
   shell:
     """
-    ITEMS=`wc -w {input}`
-    echo Input file has $ITEMS items
-    if [ $INPUT -gt 3 ]; then
-      read SAMPLE REPLICATE F_READS R_READS < {input}
-      echo SAMPLE $SAMPLE
-      echo REPLICATE $REPLICATE
-      echo F_READS $F_READS
-      echo R_READS $R_READS
-      trimmomatic PE -threads {threads}  ${R1_reads} ${R2_reads} ${R1_reads}.R1-P.qtrim.fastq.gz ${R1_reads}.R1-U.qtrim.fastq.gz ${R2_reads}.R2-P.qtrim.fastq.gz ${R2_reads}.R2-U.qtrim.fastq.gz  {config[trimmomatic_parameters]}
+    read SAMPLE REPLICATE F_READS R_READS < {input}
+    # If the sample line is empty, ignore it
+    if [ -z "$REPLICATE" ]; then
+      touch {output}
+      exit 0
+    fi
+    if [ ! -z "$R_READS" ]; then
+      trimmomatic PE -threads {threads} $F_READS $R_READS trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R1-U.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-U.qtrim.fastq.gz {config[trimmomatic_parameters]} &> {log}
+      echo $SAMPLE	$REPLICATE	trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz	trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz > {output} 2>> {log}
+      echo $SAMPLE      ${{REPLICATE}}_unpaired_R1	trimmomatic/{wildcards[job_index]}.R1-U.qtrim.fastq.gz >> {output} 2>> {log}
+      echo $SAMPLE      ${{REPLICATE}}_unpaired_R2	trimmomatic/{wildcards[job_index]}.R2-U.qtrim.fastq.gz >> {output} 2>> {log}
     else
-      read SAMPLE REPLICATE U_READS < {input}
-      echo SAMPLE $SAMPLE
-      echo REPLICATE $REPLICATE
-      echo U_READS $U_READS
-      trimmomatic SE -threads {threads}  ${R1_reads} ${R2_reads} ${R1_reads}.R1-P.qtrim.fastq.gz ${R1_reads}.R1-U.qtrim.fastq.gz ${R2_reads}.R2-P.qtrim.fastq.gz ${R2_reads}.R2-U.qtrim.fastq.gz  {config[trimmomatic_parameters]}
+      trimmomatic SE -threads {threads} $F_READS trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz {config[trimmomatic_parameters]} &> {log}
+      echo $SAMPLE      $REPLICATE      trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz > {output} 2>> {log}
     fi
     """
 
 def trimmomatic_completed_parallel_jobs(wildcards):
   parallel_dir = checkpoints.trimmomatic_split.get(**wildcards).output[0]
-  job_ids = glob_wildcards(os.path.join(parallel_dir, "job_{job_index}")).job_index
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "sample_{job_index}")).job_index
   completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
   return completed_ids
 
 
 rule trimmomatic_merge:
   input:
-    jobs=trimmomatic_completed_parallel_jobs
+    trimmomatic_completed_parallel_jobs
   output:
     samples_trimmed="samples_trimmed.txt"
   log:
@@ -104,15 +103,16 @@ rule trimmomatic_merge:
     1
   shell:
     """
-    cat {input.jobs} > {output.samples_trimmed} 2> {log}
+    echo Merging files {input}
+    cat {input} > {output.samples_trimmed}
     """
 
 
 rule samples_yaml_conversion:
   input:
-    samples=config["samples_file"],
+    samples="samples_trimmed.txt"
   output:
-    "samples.yaml"
+    "samples_trimmed.yaml"
   log:
     "logs/samples_yaml_conversion.log"
   params:
@@ -142,7 +142,7 @@ rule samples_yaml_conversion:
 
 rule trinity_inchworm_chrysalis:
   input:
-    samples=config["samples_file"],
+    samples="samples_trimmed.txt",
   output:
     "trinity_out_dir/recursive_trinity.cmds"
   log:
@@ -491,7 +491,7 @@ rule deeploc_parallel:
 
 rule kallisto:
   input:
-    samples=config["samples_file"],
+    samples="samples_trimmed",
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map"
   output:
