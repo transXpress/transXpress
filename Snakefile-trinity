@@ -10,7 +10,8 @@ min_version("5.4")
 
 configfile: "config.yaml"
 
-TRINITY_HOME=os.path.dirname(shutil.which("Trinity"))
+TRINITY_EXECUTABLE_PATH=shutil.which("Trinity")
+TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))) ##Have to resolve the symbolic link that conda makes
 
 # https://github.com/griffithlab/rnaseq_tutorial/wiki/Trinity-Assembly-And-Analysis
 
