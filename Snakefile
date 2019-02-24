@@ -27,8 +27,8 @@ rule all:
 rule clean:
   shell:
     """
-    if [ -f {samples_trimmed.txt} ]; then
-      cut -f 2 < {samples_trimmed.txt} | xargs --no-run-if-empty rm -rf
+    if [ -f samples_trimmed.txt ]; then
+      cut -f 2 < samples_trimmed.txt | xargs --no-run-if-empty rm -rf
     fi
     rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed*
     """
@@ -75,8 +75,6 @@ rule trimmomatic_parallel:
     if [ ! -z "$R_READS" ]; then
       trimmomatic PE -threads {threads} $F_READS $R_READS trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R1-U.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-U.qtrim.fastq.gz {config[trimmomatic_parameters]} &> {log}
       echo $SAMPLE	$REPLICATE	trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz	trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz > {output} 2>> {log}
-      echo $SAMPLE      ${{REPLICATE}}_unpaired_R1	trimmomatic/{wildcards[job_index]}.R1-U.qtrim.fastq.gz >> {output} 2>> {log}
-      echo $SAMPLE      ${{REPLICATE}}_unpaired_R2	trimmomatic/{wildcards[job_index]}.R2-U.qtrim.fastq.gz >> {output} 2>> {log}
     else
       trimmomatic SE -threads {threads} $F_READS trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz {config[trimmomatic_parameters]} &> {log}
       echo $SAMPLE      $REPLICATE      trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz > {output} 2>> {log}
@@ -491,7 +489,7 @@ rule deeploc_parallel:
 
 rule kallisto:
   input:
-    samples="samples_trimmed",
+    samples="samples_trimmed.txt",
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map"
   output:
