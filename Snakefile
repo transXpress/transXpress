@@ -14,7 +14,7 @@ TRINITY_HOME=os.path.dirname(shutil.which("Trinity"))
 
 rule all:
   input:
-    config["samples_file"],
+    "samples_trimmed.txt",
     "transcriptome.fasta",
     "transcriptome.pep",
     "transcriptome_stats.txt",
@@ -33,25 +33,80 @@ rule clean:
     fi
     """
 
-# note: trimmomatic can use gzipped files directly
-rule trimmomatic:
+
+checkpoint trimmomatic_split:
   input:
     samples=config["samples_file"]
   output:
-    trimmed_samples="samples_trimmed.txt",
-    trimmed_F_reads="trimmed_F.fq.gz",
-    trimmed_R_reads="trimmed_R.fq.gz",
-    trimmed_U_reads="trimmed_U.fq.gz"
+    directory("trimmomatic")
   log:
-    "logs/samples_yaml_conversion.log"
+    "logs/trimmomatic_split.log"
+  params:
+    memory="w"
+  threads:
+    1
+  shell:
+    """
+    mkdir -p {output} &> {log}
+    split --numeric-suffixes=1 -l 1 {input} {output}/sample_ &>> {log}
+    """
+
+
+# note: trimmomatic can use gzipped files directly
+rule trimmomatic_parallel:
+  input:
+    "trimmomatic/sample_{job_index}"
+  output:
+    "trimmomatic/completed_{job_index}"
+  log:
+    "logs/trimmomatic_parallel{job_index}.log"
+  params:
+    memory="10"
+  threads:
+    4
+  shell:
+    """
+    ITEMS=`wc -w {input}`
+    echo Input file has $ITEMS items
+    if [ $INPUT -gt 3 ]; then
+      read SAMPLE REPLICATE F_READS R_READS < {input}
+      echo SAMPLE $SAMPLE
+      echo REPLICATE $REPLICATE
+      echo F_READS $F_READS
+      echo R_READS $R_READS
+      trimmomatic PE -threads {threads}  ${R1_reads} ${R2_reads} ${R1_reads}.R1-P.qtrim.fastq.gz ${R1_reads}.R1-U.qtrim.fastq.gz ${R2_reads}.R2-P.qtrim.fastq.gz ${R2_reads}.R2-U.qtrim.fastq.gz  {config[trimmomatic_parameters]}
+    else
+      read SAMPLE REPLICATE U_READS < {input}
+      echo SAMPLE $SAMPLE
+      echo REPLICATE $REPLICATE
+      echo U_READS $U_READS
+      trimmomatic SE -threads {threads}  ${R1_reads} ${R2_reads} ${R1_reads}.R1-P.qtrim.fastq.gz ${R1_reads}.R1-U.qtrim.fastq.gz ${R2_reads}.R2-P.qtrim.fastq.gz ${R2_reads}.R2-U.qtrim.fastq.gz  {config[trimmomatic_parameters]}
+    fi
+    """
+
+def trimmomatic_completed_parallel_jobs(wildcards):
+  parallel_dir = checkpoints.trimmomatic_split.get(**wildcards).output[0]
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "job_{job_index}")).job_index
+  completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
+  return completed_ids
+
+
+rule trimmomatic_merge:
+  input:
+    jobs=trimmomatic_completed_parallel_jobs
+  output:
+    samples_trimmed="samples_trimmed.txt"
+  log:
+    "logs/trimmomatic_merge.log"
   params:
     memory="2"
   threads:
     1
-   shell:
+  shell:
     """
-    trimmomatic PE -threads {threads}  ${R1_reads} ${R2_reads} ${R1_reads}.R1-P.qtrim.fastq.gz ${R1_reads}.R1-U.qtrim.fastq.gz ${R2_reads}.R2-P.qtrim.fastq.gz ${R2_reads}.R2-U.qtrim.fastq.gz  {config[trimmomatic_parameters]}
+    cat {input.jobs} > {output.samples_trimmed} 2> {log}
     """
+
 
 rule samples_yaml_conversion:
   input:
@@ -426,6 +481,9 @@ rule deeploc_parallel:
     1
   shell:
     """
+    # Required for deeploc in some installations
+    # See https://github.com/Theano/Theano/issues/6568
+    export MKL_THREADING_LAYER=GNU
     deeploc -f {input} -o {output} &> {log}
     mv {output}.txt {output} &>> {log}
     """
