@@ -19,9 +19,9 @@ else
  CLUSTER_PARAMS="--cores 8"
 fi
 
-echo "Running snakemake"
+echo "Running the transXpress-trinity pipeline using snakemake"
 snakemake --snakefile ../Snakefile-trinity $CLUSTER_PARAMS "$@"
 
-echo "Making DAG file"
+echo "Making DAG file describing pipeline execution"
 snakemake --snakefile ../Snakefile-trinity --dag | dot -Tsvg > dag.svg
 
