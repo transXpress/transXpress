@@ -48,7 +48,7 @@ rule trimmomatic:
     memory="2"
   threads:
     1
-   shell:
+  shell:
     """
     trimmomatic PE -threads {threads}  ${R1_reads} ${R2_reads} ${R1_reads}.R1-P.qtrim.fastq.gz ${R1_reads}.R1-U.qtrim.fastq.gz ${R2_reads}.R2-P.qtrim.fastq.gz ${R2_reads}.R2-U.qtrim.fastq.gz  {config[trimmomatic_parameters]}
     """
