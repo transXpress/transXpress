@@ -247,6 +247,7 @@ rule rnaspades:
   output:
     config["annotated_fasta_prefix"]+"_spades_out/transcripts.fasta"
     ##config["annotated_fasta_prefix"]+"_spades_out/K"+THEKMER+"/assembly_graph_with_scaffolds.gfa"
+    ##TODO gene_trans_map="transcriptome_spades.gene_trans_map"
   log:
     "logs/rnaspades.log"
   params:
