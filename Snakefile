@@ -29,6 +29,10 @@ rule all:
 
 
 rule clean:
+  params:
+    memory="2"
+  threads:
+    1
   shell:
     """
     if [ -f samples_trimmed.txt ]; then
@@ -46,7 +50,7 @@ checkpoint trimmomatic_split:
   log:
     "logs/trimmomatic_split.log"
   params:
-    memory="w"
+    memory="2"
   threads:
     1
   shell:
@@ -202,12 +206,12 @@ def trinity_completed_parallel_jobs(wildcards):
 
 rule trinity_butterfly_merge:
   input:
-    samples=config["samples_file"],
+    samples="samples_trimmed.txt",
     jobs=trinity_completed_parallel_jobs
   output:
     cmds_completed="trinity_out_dir/recursive_trinity.cmds.completed",
-    transcriptome="transcriptome.fasta",
-    gene_trans_map="transcriptome.gene_trans_map"
+    transcriptome="trinity_out_dir/Trinity.fasta",
+    gene_trans_map="trinity_out_dir/Trinity.fasta.gene_trans_map"
   log:
     "logs/trinity_butterfly_merge.log"
   params:
@@ -218,8 +222,44 @@ rule trinity_butterfly_merge:
     """
     cat {input.jobs} > {output.cmds_completed} 2> {log}
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
-    cp trinity_out_dir/Trinity.fasta {output.transcriptome} &>> {log}
-    cp trinity_out_dir/Trinity.fasta.gene_trans_map {output.gene_trans_map} &>> {log}
+    """
+
+
+rule rnaspades:
+  input:
+    samples="samples_trimmed.yaml"
+  output:
+    transcriptome="transcriptome_spades.fasta",
+    gene_trans_map="transcriptome_spades.gene_trans_map"
+  log:
+    "logs/trinity_butterfly_merge.log"
+  params:
+    memory="200"
+  threads:
+    16
+  shell:
+    """
+    # run rnaSPADES here
+    """
+
+ 
+rule transcriptome_copy:
+  input:
+    transcriptome=rules.rnaspades.output.transcriptome if config["assembler"]=="rnaspades" else rules.trinity_butterfly_merge.output.transcriptome,
+    gene_trans_map=rules.rnaspades.output.gene_trans_map if config["assembler"]=="rnaspades" else rules.trinity_butterfly_merge.output.gene_trans_map,
+  output:
+    transcriptome="transcriptome.fasta",
+    gene_trans_map="transcriptome.gene_trans_map"
+  log:
+    "logs/transcriptome_copy.log"
+  params:
+    memory="2"
+  threads:
+    1
+  shell:
+    """
+    cp {input.transcriptome} {output.transcriptome} &> {log}
+    cp {input.gene_trans_map} {output.gene_trans_map} &>> {log}
     """
 
 

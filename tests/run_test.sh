@@ -13,7 +13,7 @@
 #echo "'tail -f $OUTFILE' will let you see the output of nextflow in real time" | tee -a $OUTFILE 
 #echo "transXpress-nextflow dropping to background on host "$HOSTNAME"..." | tee -a $OUTFILE
 
-SNAKEFILE="../Snakefile-trinity"
+SNAKEFILE="../Snakefile"
 
 echo "Running the transXpress-trinity pipeline using snakemake"
 if [ ! -z `which bsub` ]; then
