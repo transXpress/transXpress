@@ -6,7 +6,7 @@ import Bio.SeqIO
 import Bio.Alphabet
 from snakemake.utils import min_version
 
-min_version("5.4")
+min_version("5.4.1")
 
 configfile: "config.yaml"
 
