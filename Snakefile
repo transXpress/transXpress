@@ -147,13 +147,14 @@ rule samples_yaml_conversion:
         sample_dict['left reads'] = [r]
         ##Depends on where the unpaired reads are written to
         ##Presumably could get from sample txt as well
-        unpaired_reads_f = f[:-16]+"U.qtrim.fastq.gz"
-        unpaired_reads_r = r[:-16]+"U.qtrim.fastq.gz"
-        assert os.path.isfile(unpaired_reads_f)
-        assert os.path.isfile(unpaired_reads_r)
-        unpaired_reads = [unpaired_reads_f] + [unpaired_reads_r]
-        if len(unpaired_reads) > 0:
-            sample_dict['single reads'] = unpaired_reads
+        ##Note: Commented out, to make it consistent with Trinity. May change in future
+        ##unpaired_reads_f = f[:-16]+"U.qtrim.fastq.gz"
+        ##unpaired_reads_r = r[:-16]+"U.qtrim.fastq.gz"
+        ##assert os.path.isfile(unpaired_reads_f)
+        ##assert os.path.isfile(unpaired_reads_r)
+        ##unpaired_reads = [unpaired_reads_f] + [unpaired_reads_r]
+        ##if len(unpaired_reads) > 0:
+        ##    sample_dict['single reads'] = unpaired_reads
         sample_list.append(sample_dict)
     write_handle = open("samples_trimmed.yaml","w")
     write_handle.write(pprint.pformat(sample_list))
