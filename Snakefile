@@ -143,9 +143,8 @@ rule samples_yaml_conversion:
         sample_dict = dict()
         sample_dict['orientation'] = 'fr'
         sample_dict['type'] = 'paired-end'
-        sample_dict['right reads'] = f
-        sample_dict['left reads'] = r
-        sample_list.append(sample_dict)
+        sample_dict['right reads'] = [f]
+        sample_dict['left reads'] = [r]
         ##Depends on where the unpaired reads are written to
         ##Presumably could get from sample txt as well
         unpaired_reads_f = f[:-16]+"U.qtrim.fastq.gz"
@@ -155,7 +154,7 @@ rule samples_yaml_conversion:
         unpaired_reads = [unpaired_reads_f] + [unpaired_reads_r]
         if len(unpaired_reads) > 0:
             sample_dict['single reads'] = unpaired_reads
-            sample_list.append(sample_dict)
+        sample_list.append(sample_dict)
     write_handle = open("samples_trimmed.yaml","w")
     write_handle.write(pprint.pformat(sample_list))
     write_handle.close()
@@ -244,21 +243,21 @@ rule trinity_butterfly_merge:
 
 rule rnaspades:
   input:
-    samples="samples_trimmed.yaml"
+    samples="samples_trimmed.yaml",
   output:
-    transcriptome="transcriptome_spades.fasta",
-    gene_trans_map="transcriptome_spades.gene_trans_map"
+    config["annotated_fasta_prefix"]+"_spades_out/transcripts.fasta"
+    ##config["annotated_fasta_prefix"]+"_spades_out/K"+THEKMER+"/assembly_graph_with_scaffolds.gfa"
   log:
-    "logs/trinity_butterfly_merge.log"
+    "logs/rnaspades.log"
   params:
     memory="200"
   threads:
     16
   shell:
     """
-    # run rnaSPADES here
+    ##TODO = kmer shouldn't be fixed, & should be configurable from the beginning of the script (did run into some bugs with the auto parameter)
+    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o {config[annotated_fasta_prefix]}_spades_out --only-assembler -k 47
     """
-
  
 rule transcriptome_copy:
   input:

@@ -23,7 +23,7 @@ trinity_parameters: "--seqType fq"
 strand_specific: ""
 
 # Can be used for species name etc
-annotated_fasta_prefix: ""
+annotated_fasta_prefix: "test_prefix"
 
 # For pfam, rfam, and blast searches
 e_value_threshold: "1e-6"
