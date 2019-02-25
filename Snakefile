@@ -125,24 +125,41 @@ rule samples_yaml_conversion:
     memory="2"
   threads:
     1
-  shell:
-    """
-    echo "[{
-        orientation: "fr",
-        type: "paired-end",
-        right reads: [" >datasets.yaml
-    ls -1 ./*.R1-P.qtrim.fastq.gz | sed 's/^/\\"/g' | sed 's/\$/\\"/g' | sed 's/@\"/\\"/g' | tr "\\n" "," | sed 's/,\$//g' >>datasets.yaml
-    echo "]," >> datasets.yaml
-    echo "left reads: [" >> datasets.yaml
-    ls -1 ./*.R2-P.qtrim.fastq.gz | sed 's/^/\\"/g' | sed 's/\$/\\"/g' | sed 's/@\"/\\"/g' | tr "\\n" "," | sed 's/,\$//g' >>datasets.yaml
-    echo "]
-      }," >>datasets.yaml
-    echo "{
-        type: "single",
-         single reads: [" >> datasets.yaml
-    ls -1 ./*U.qtrim.fastq.gz | sed 's/^/\\"/g' | sed 's/\$/\\"/g' | sed 's/@\"/\\"/g' | tr "\\n" "," | sed 's/,\$//g' >>datasets.yaml
-    echo "]}]" >> datasets.yaml
-    """
+  run:
+    import os
+    import os.path
+    import pprint
+    print("yaml conversion running")
+    read_handle = open("samples_trimmed.txt","r")
+    lines = read_handle.readlines()
+    
+    sample_list = []
+    for l in lines:
+        splitline = l.strip().split(" ")
+        f = splitline[2]
+        r = splitline[3]
+        assert os.path.isfile(f)
+        assert os.path.isfile(r)
+        sample_dict = dict()
+        sample_dict['orientation'] = 'fr'
+        sample_dict['type'] = 'paired-end'
+        sample_dict['right reads'] = f
+        sample_dict['left reads'] = r
+        sample_list.append(sample_dict)
+        ##Depends on where the unpaired reads are written to
+        ##Presumably could get from sample txt as well
+        unpaired_reads_f = f[:-16]+"U.qtrim.fastq.gz"
+        unpaired_reads_r = r[:-16]+"U.qtrim.fastq.gz"
+        assert os.path.isfile(unpaired_reads_f)
+        assert os.path.isfile(unpaired_reads_r)
+        unpaired_reads = [unpaired_reads_f] + [unpaired_reads_r]
+        if len(unpaired_reads) > 0:
+            sample_dict['single reads'] = unpaired_reads
+            sample_list.append(sample_dict)
+    write_handle = open("samples_trimmed.yaml","w")
+    write_handle.write(pprint.pformat(sample_list))
+    write_handle.close()
+    read_handle.close()
 
 
 
