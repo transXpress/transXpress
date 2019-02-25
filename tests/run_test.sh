@@ -13,15 +13,15 @@
 #echo "'tail -f $OUTFILE' will let you see the output of nextflow in real time" | tee -a $OUTFILE 
 #echo "transXpress-nextflow dropping to background on host "$HOSTNAME"..." | tee -a $OUTFILE
 
-if [ ! -z `which bsub` ]; then
- CLUSTER_PARAMS=--latency-wait 60 --jobs 10000 --cluster 'bsub -oo {log}.bsub -n {threads} -R rusage[mem={params.memory}000] -R span[hosts=1]'
-else
- CLUSTER_PARAMS="--cores 8"
-fi
+SNAKEFILE="../Snakefile-trinity"
 
 echo "Running the transXpress-trinity pipeline using snakemake"
-snakemake --snakefile ../Snakefile-trinity $CLUSTER_PARAMS "$@"
+if [ ! -z `which bsub` ]; then
+  snakemake --snakefile $SNAKEFILE --latency-wait 60 --jobs 10000 --cluster "bsub -oo {log}.bsub -n {threads} -R rusage[mem={params.memory}000] -R span[hosts=1]" "$@"
+else
+  snakemake --snakefile $SNAKEFILE --cores 8 "$@"
+fi
 
 echo "Making DAG file describing pipeline execution"
-snakemake --snakefile ../Snakefile-trinity --dag | dot -Tsvg > dag.svg
+snakemake --snakefile $SNAKEFILE --dag | dot -Tsvg > dag.svg
 
