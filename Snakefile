@@ -116,9 +116,9 @@ rule trimmomatic_merge:
 
 rule samples_yaml_conversion:
   input:
-    samples="samples_trimmed.txt"
+    samples_txt="samples_trimmed.txt"
   output:
-    "samples_trimmed.yaml"
+    samples_yaml="samples_trimmed.yaml"
   log:
     "logs/samples_yaml_conversion.log"
   params:
@@ -129,38 +129,43 @@ rule samples_yaml_conversion:
     import os
     import os.path
     import pprint
-    print("yaml conversion running")
-    read_handle = open("samples_trimmed.txt","r")
-    lines = read_handle.readlines()
-    
-    sample_list = []
-    for l in lines:
-        splitline = l.strip().split(" ")
-        f = splitline[2]
-        r = splitline[3]
-        assert os.path.isfile(f)
-        assert os.path.isfile(r)
-        sample_dict = dict()
-        sample_dict['orientation'] = 'fr'
-        sample_dict['type'] = 'paired-end'
-        sample_dict['right reads'] = [f]
-        sample_dict['left reads'] = [r]
-        ##Depends on where the unpaired reads are written to
-        ##Presumably could get from sample txt as well
-        ##Note: Commented out, to make it consistent with Trinity. May change in future
-        ##unpaired_reads_f = f[:-16]+"U.qtrim.fastq.gz"
-        ##unpaired_reads_r = r[:-16]+"U.qtrim.fastq.gz"
-        ##assert os.path.isfile(unpaired_reads_f)
-        ##assert os.path.isfile(unpaired_reads_r)
-        ##unpaired_reads = [unpaired_reads_f] + [unpaired_reads_r]
-        ##if len(unpaired_reads) > 0:
-        ##    sample_dict['single reads'] = unpaired_reads
-        sample_list.append(sample_dict)
-    write_handle = open("samples_trimmed.yaml","w")
-    write_handle.write(pprint.pformat(sample_list))
-    write_handle.close()
-    read_handle.close()
 
+    sample_list = []
+    with open(input["samples_txt"], "r") as input_handle:
+      for line in input_handle:
+        row = re.split("[\t ]+", line)
+        if (len(row) > 3): # paired reads
+          paired_dict = {}
+          paired_dict['orientation'] = 'fr'
+          paired_dict['type'] = 'paired-end'
+          f_reads = row[2].strip()
+          r_reads = row[3].strip()
+          assert os.path.isfile(f_reads)
+          assert os.path.isfile(r_reads)
+          paired_dict['left reads'] = [f_reads]
+          paired_dict['right reads'] = [r_reads]
+          ##Depends on where the unpaired reads are written to
+          ##Presumably could get from sample txt as well
+          ##Note: Commented out, to make it consistent with Trinity. May change in future
+          ##unpaired_reads_f = f[:-16]+"U.qtrim.fastq.gz"
+          ##unpaired_reads_r = r[:-16]+"U.qtrim.fastq.gz"
+          ##assert os.path.isfile(unpaired_reads_f)
+          ##assert os.path.isfile(unpaired_reads_r)
+          ##unpaired_reads = [unpaired_reads_f] + [unpaired_reads_r]
+          ##if len(unpaired_reads) > 0:
+          ##    sample_dict['single reads'] = unpaired_reads
+          sample_list.append(paired_dict)
+
+        if (len(row) == 3): # unpaired reads
+          unpaired_dict = {}
+          unpaired_dict['type'] = 'single'
+          u_reads = row[2].strip()
+          assert os.path.isfile(u_reads)
+          unpaired_dict['single reads'] = [u_reads]
+          sample_list.append(unpaired_dict)
+
+    with open(output["samples_yaml"], "w") as output_handle:
+      output_handle.write(pprint.pformat(sample_list))
 
 
 rule trinity_inchworm_chrysalis:
