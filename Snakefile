@@ -50,7 +50,7 @@ checkpoint trimmomatic_split:
   shell:
     """
     mkdir -p {output} &> {log}
-    split --numeric-suffixes=1 -l 1 -a 4 {input} {output}/sample_ &>> {log}
+    split -d -l 1 {input} {output}/sample_ &>> {log}
     """
 
 
@@ -181,8 +181,8 @@ checkpoint trinity_butterfly_split:
   shell:
     """
     mkdir -p {output} &> {log}
-    # Note the -a 6 is important, otherwise split may fail with "split: output file suffixes exhausted"
-    split --numeric-suffixes=1 -l 100 -a 6 {input} {output}/job_ &>> {log}
+    # Note it is important to use -d and not --numeric-suffixes, see https://github.com/transXpress/transXpress-snakemake/issues/12
+    split -d -l 100 {input} {output}/job_ &>> {log}
     """
 
 
