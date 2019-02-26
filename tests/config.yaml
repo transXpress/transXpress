@@ -7,7 +7,7 @@
 samples_file: "test_samples.txt"
 
 # trimmomatic is used for both trinity and rnaSPAdes
-trimmomatic_parameters: "ILLUMINACLIP:adapters.fasta:3:30:10 SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:25"
+trimmomatic_parameters: "ILLUMINACLIP:../adapters.fasta:3:30:10 SLIDINGWINDOW:4:20 LEADING:20 TRAILING:20 MINLEN:25"
 
 # set to trinity or rnaspades
 assembler: "trinity"
