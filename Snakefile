@@ -31,10 +31,6 @@ rule all:
 
 
 rule clean:
-  params:
-    memory="2"
-  threads:
-    1
   shell:
     """
     if [ -f samples_trimmed.txt ]; then
@@ -51,10 +47,6 @@ checkpoint trimmomatic_split:
     directory("trimmomatic")
   log:
     "logs/trimmomatic_split.log"
-  params:
-    memory="2"
-  threads:
-    1
   shell:
     """
     mkdir -p {output} &> {log}
@@ -105,10 +97,6 @@ rule trimmomatic_merge:
     samples_trimmed="samples_trimmed.txt"
   log:
     "logs/trimmomatic_merge.log"
-  params:
-    memory="2"
-  threads:
-    1
   shell:
     """
     echo Merging files {input}
@@ -123,10 +111,6 @@ rule samples_yaml_conversion:
     samples_yaml="samples_trimmed.yaml"
   log:
     "logs/samples_yaml_conversion.log"
-  params:
-    memory="2"
-  threads:
-    1
   run:
     import os
     import os.path
@@ -194,10 +178,6 @@ checkpoint trinity_butterfly_split:
     directory("trinity_out_dir/parallel_jobs")
   log:
     "logs/trinity_split.log"
-  params:
-    memory="10"
-  threads:
-    1
   shell:
     """
     mkdir -p {output} &> {log}
@@ -278,10 +258,6 @@ rule transcriptome_copy:
     gene_trans_map="transcriptome.gene_trans_map"
   log:
     "logs/transcriptome_copy.log"
-  params:
-    memory="2"
-  threads:
-    1
   shell:
     """
     cp {input.transcriptome} {output.transcriptome} &> {log}
