@@ -99,8 +99,7 @@ rule trimmomatic_merge:
     "logs/trimmomatic_merge.log"
   shell:
     """
-    echo Merging files {input}
-    cat {input} > {output.samples_trimmed}
+    cat {input} > {output.samples_trimmed} 2> {log}
     """
 
 
