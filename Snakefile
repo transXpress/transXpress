@@ -38,7 +38,7 @@ rule clean:
     if [ -f samples_trimmed.txt ]; then
       cut -f 2 < samples_trimmed.txt | xargs --no-run-if-empty rm -rf
     fi
-    rm -rf trinity_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed*
+    rm -rf trinity_* rnaspades_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed*
     """
 
 
@@ -251,9 +251,9 @@ rule rnaspades:
   input:
     samples="samples_trimmed.yaml",
   output:
-    config["annotated_fasta_prefix"]+"_spades_out/transcripts.fasta"
+    transcriptome="rnaspades_out/transcripts.fasta",
     ##config["annotated_fasta_prefix"]+"_spades_out/K"+THEKMER+"/assembly_graph_with_scaffolds.gfa"
-    ##TODO gene_trans_map="transcriptome_spades.gene_trans_map"
+    gene_trans_map="rnaspades_out/transcripts.gene_trans_map"
   log:
     "logs/rnaspades.log"
   params:
@@ -263,7 +263,8 @@ rule rnaspades:
   shell:
     """
     ##TODO = kmer shouldn't be fixed, & should be configurable from the beginning of the script (did run into some bugs with the auto parameter)
-    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o {config[annotated_fasta_prefix]}_spades_out --only-assembler -k 47
+    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out --only-assembler -k 47 &> {log}
+    seqkit seq -n {output.transcriptome} | while read id ; do echo -e $id\\$id ; done > {output.gene_trans_map} 2>> {log}
     """
  
 rule transcriptome_copy:
