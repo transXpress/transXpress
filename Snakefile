@@ -50,7 +50,7 @@ checkpoint trimmomatic_split:
   shell:
     """
     mkdir -p {output} &> {log}
-    split --numeric-suffixes=1 -l 1 {input} {output}/sample_ &>> {log}
+    split --numeric-suffixes=1 -l 1 -a 4 {input} {output}/sample_ &>> {log}
     """
 
 
@@ -181,7 +181,8 @@ checkpoint trinity_butterfly_split:
   shell:
     """
     mkdir -p {output} &> {log}
-    split --numeric-suffixes=1 -l 100 {input} {output}/job_ &>> {log}
+    # Note the -a 6 is important, otherwise split may fail with "split: output file suffixes exhausted"
+    split --numeric-suffixes=1 -l 100 -a 6 {input} {output}/job_ &>> {log}
     """
 
 
@@ -366,6 +367,9 @@ rule trinity_DE:
     """
 
 
+# a more elegant way to do this is:
+# seqkit seq -i {input} | seqkit replace -s -p "\*" -r "" | seqkit split -f -s 1 -O {output}
+# however, there seems to be a problem in seqkit: https://github.com/shenwei356/seqkit/issues/65
 checkpoint fasta_split:
   input:
     "transcriptome.{extension}"
