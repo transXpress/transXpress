@@ -22,9 +22,11 @@ Requires
 * kallisto (install via conda)
 * NCBI BLAST+ (install via conda)
 * R (install via conda)
+* edgeR (install via conda)
 * seqkit (install via conda)
+* wget (install via conda)
 * [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
-* basic Linux utitilies: wget, split, awk, cut, gzip
+* basic Linux utitilies: split, awk, cut, gzip
 
 ## Installation
 
@@ -34,7 +36,7 @@ Requires
  conda config --add channels bioconda
  conda config --add channels conda-forge
  conda config --add channels r
- conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r seqkit
+ conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
 ~~~~
 3. Install deeploc
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
