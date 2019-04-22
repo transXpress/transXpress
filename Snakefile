@@ -750,7 +750,7 @@ rule annotated_fasta:
       print ("Annotating FASTA file", input[1], "to", output[1], file=log_handle)
       with open(input["proteome"], "r") as input_fasta_handle, open(output["proteome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
-          transcript_id = re.sub("\\.p[0-9]+\$", "", record.id)
+          transcript_id = re.sub("\\.p[0-9]+$", "", record.id)
           record.description = "transdecoder: " + re.search("ORF type:([^,]+,score=[^,]+)", record.description).group(1)
           if transcript_id in expression_annotations:
             record.description += "; TPM: " + expression_annotations.get(transcript_id)
