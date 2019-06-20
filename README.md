@@ -31,14 +31,19 @@ Requires
 ## Installation
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
-2. Install snakemake and other dependencies:  
+2. Setup conda environment
+~~
+conda create --name transxpress
+conda activate transxpress
+~~
+3. Install snakemake and other dependencies:  
 ~~~~
  conda config --add channels bioconda
  conda config --add channels conda-forge
  conda config --add channels r
  conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
 ~~~~
-3. Install deeploc
+4. Install deeploc
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
       * Install dependencies: `pip install -r requirements.txt`
       * Install deeploc: `python setup.py install` or locally: `python setup.py install --user`
