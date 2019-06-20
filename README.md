@@ -32,10 +32,10 @@ Requires
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
 2. Setup conda environment
-~~
+~~~~
 conda create --name transxpress
 conda activate transxpress
-~~
+~~~~
 3. Install snakemake and other dependencies:  
 ~~~~
  conda config --add channels bioconda
