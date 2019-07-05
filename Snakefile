@@ -180,8 +180,9 @@ checkpoint trinity_butterfly_split:
   shell:
     """
     mkdir -p {output} &> {log}
-    # Note it is important to use -d and not --numeric-suffixes, see https://github.com/transXpress/transXpress-snakemake/issues/12
-    split -d -l 100 {input} {output}/job_ &>> {log}
+    # Note: it is important to use -d and not --numeric-suffixes, see https://github.com/transXpress/transXpress-snakemake/issues/12
+    # Note #2: we split into 1000 chunks to avoid running over the command line limit when too many parallel jobs are created, see https://bitbucket.org/snakemake/snakemake/issues/878/errno-7-argument-list-too-long-path-to-bin 
+    split -n l/1000 -e -d {input} {output}/job_ &>> {log}
     """
 
 
@@ -222,11 +223,9 @@ rule trinity_butterfly_parallel_merge:
     1
   shell:
     """
-    # Here the following command would be a proper way to do this, but 
-    # it fails when there are too many jobs (argument list gets too long).
+    # Can crash if there are too many parallel jobs
     # See https://bitbucket.org/snakemake/snakemake/issues/878/errno-7-argument-list-too-long-path-to-bin 
-    # cat {input.jobs} > {output.cmds_completed} 2> {log}
-    cp {input.cmds} {output.cmds_completed} 2> {log}
+    cat {input.jobs} > {output.cmds_completed} 2> {log}
     """
 
 rule trinity_final:
