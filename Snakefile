@@ -208,23 +208,42 @@ def trinity_completed_parallel_jobs(wildcards):
   completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
   return completed_ids
 
-rule trinity_butterfly_merge:
+rule trinity_butterfly_parallel_merge:
   input:
-    samples="samples_trimmed.txt",
-    jobs=trinity_completed_parallel_jobs
+    jobs=trinity_completed_parallel_jobs,
+    cmds="trinity_out_dir/recursive_trinity.cmds"
   output:
+    cmds_completed="trinity_out_dir/recursive_trinity.cmds.completed"
+  log:
+    "logs/trinity_butterfly_parallel_merge.log"
+  params:
+    memory="10"
+  threads:
+    1
+  shell:
+    """
+    # Here the following command would be a proper way to do this, but 
+    # it fails when there are too many jobs (argument list gets too long).
+    # See https://bitbucket.org/snakemake/snakemake/issues/878/errno-7-argument-list-too-long-path-to-bin 
+    # cat {input.jobs} > {output.cmds_completed} 2> {log}
+    cp {input.cmds} {output.cmds_completed} 2> {log}
+    """
+
+rule trinity_final:
+  input:
     cmds_completed="trinity_out_dir/recursive_trinity.cmds.completed",
+    samples="samples_trimmed.txt"
+  output:
     transcriptome="trinity_out_dir/Trinity.fasta",
     gene_trans_map="trinity_out_dir/Trinity.fasta.gene_trans_map"
   log:
-    "logs/trinity_butterfly_merge.log"
+    "logs/trinity_final.log"
   params:
     memory="200"
   threads:
     16
   shell:
     """
-    cat {input.jobs} > {output.cmds_completed} 2> {log}
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     """
 
@@ -252,8 +271,8 @@ rule rnaspades:
  
 rule transcriptome_copy:
   input:
-    transcriptome=rules.rnaspades.output.transcriptome if config["assembler"]=="rnaspades" else rules.trinity_butterfly_merge.output.transcriptome,
-    gene_trans_map=rules.rnaspades.output.gene_trans_map if config["assembler"]=="rnaspades" else rules.trinity_butterfly_merge.output.gene_trans_map,
+    transcriptome=rules.rnaspades.output.transcriptome if config["assembler"]=="rnaspades" else rules.trinity_final.output.transcriptome,
+    gene_trans_map=rules.rnaspades.output.gene_trans_map if config["assembler"]=="rnaspades" else rules.trinity_final.output.gene_trans_map,
   output:
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map"
