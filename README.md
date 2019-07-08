@@ -7,7 +7,7 @@ Also see our sister project: [transXpress-nextflow](https://github.com/transXpre
 
 ## Dependencies
 
-Requires
+transXpress Requires
 * snakemake 5.4.2+ (install via conda)
 * fastqc (install via conda)
 * trimmomatic (install via conda)
@@ -31,7 +31,7 @@ Requires
 ## Installation
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
-2. Setup conda environment
+2. Setup conda environment (optional)
 ~~~~
 conda create --name transxpress
 conda activate transxpress
@@ -47,6 +47,15 @@ conda activate transxpress
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
       * Install dependencies: `pip install -r requirements.txt`
       * Install deeploc: `python setup.py install` or locally: `python setup.py install --user`
+
+## Input
+
+Create a tab-separated file called *samples.txt* with the following contents: 
+  cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
+  cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
+  cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
+  cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
+
 
 ## Usage
 
