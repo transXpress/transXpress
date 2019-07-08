@@ -51,11 +51,12 @@ conda activate transxpress
 ## Input
 
 Create a tab-separated file called *samples.txt* with the following contents: 
-  cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
-  cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
-  cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
-  cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
-
+~~~
+cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
+cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
+cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
+cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq	
+~~~
 
 ## Usage
 
