@@ -46,7 +46,7 @@ conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
       * Install deeploc: `/path/to/miniconda3/bin/python setup.py install` 
         (note: it is important to use the *full* path to python here)
-5. Checkout transXpress code in the folder where you will be performing your assembly:
+5. Checkout the transXpress code into the folder where you will be performing your assembly:
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
@@ -61,7 +61,9 @@ cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
 cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
 ~~~
 
-## Usage
+Also take a look at the configuration file *config.yaml* and update as required.
+
+## Running transXpress
 
 Use the provided script:
 ~~~~
