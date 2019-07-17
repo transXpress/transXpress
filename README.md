@@ -7,7 +7,7 @@ Also see our sister project: [transXpress-nextflow](https://github.com/transXpre
 
 ## Dependencies
 
-transXpress Requires
+transXpress requires:
 * snakemake 5.4.2+ (install via conda)
 * fastqc (install via conda)
 * trimmomatic (install via conda)
@@ -31,7 +31,7 @@ transXpress Requires
 ## Installation
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
-2. Setup conda environment (optional)
+2. Setup conda environment (optional):
 ~~~~
 conda create --name transxpress
 conda activate transxpress
@@ -42,11 +42,11 @@ conda config --add channels bioconda
 conda config --add channels conda-forge
 conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
 ~~~~
-4. Install deeploc
+4. Install deeploc:
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
       * Install deeploc: `/path/to/miniconda3/bin/python setup.py install` 
         (note: it is important to use the *full* path to python here)
-5. Checkout transXpress code in the folder where you will be performing your assembly
+5. Checkout transXpress code in the folder where you will be performing your assembly:
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
@@ -58,7 +58,7 @@ Create a tab-separated file called *samples.txt* with the following contents:
 cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
 cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
 cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
-cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq	
+cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
 ~~~
 
 ## Usage
