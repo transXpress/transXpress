@@ -38,14 +38,18 @@ conda activate transxpress
 ~~~~
 3. Install snakemake and other dependencies:  
 ~~~~
- conda config --add channels bioconda
- conda config --add channels conda-forge
- conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
+conda config --add channels bioconda
+conda config --add channels conda-forge
+conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
 ~~~~
 4. Install deeploc
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
       * Install deeploc: `/path/to/miniconda3/bin/python setup.py install` 
         (note: it is important to use the *full* path to python here)
+5. Checkout transXpress code in the folder where you will be performing your assembly
+~~~~
+git clone https://github.com/transXpress/transXpress-snakemake.git .
+~~~~
 
 ## Input
 
@@ -59,12 +63,17 @@ cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
 
 ## Usage
 
-Run locally with 10 parallel threads:
+Use the provided script:
+~~~~
+./transXpress.sh
+~~~~
+
+Or run snakemake manually with 10 local threads:
 ~~~~
 snakemake --cores 10 --config samples_file=samples_file.txt
 ~~~~
 
-Run on an LSF cluster:
+Or run snakemake manually on an LSF cluster:
 ~~~~
 snakemake --latency-wait 60 --jobs 10000 --cluster 'bsub -n {threads} -R "rusage[mem={params.memory}000] span[hosts=1]" -oo {log}.bsub'
 ~~~~
