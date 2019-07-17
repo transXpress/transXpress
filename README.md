@@ -40,13 +40,12 @@ conda activate transxpress
 ~~~~
  conda config --add channels bioconda
  conda config --add channels conda-forge
- conda config --add channels r
- conda install snakemake fastqc trimmomatic trinity=2.8.5-0 spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r=3.6.0 bioconductor-edger seqkit wget
+ conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
 ~~~~
 4. Install deeploc
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
-      * Install dependencies: `pip install -r requirements.txt`
-      * Install deeploc: `python setup.py install` or locally: `python setup.py install --user`
+      * Install deeploc: `/path/to/miniconda3/bin/python setup.py install` 
+        (note: it is important to use the *full* path to python here)
 
 ## Input
 
