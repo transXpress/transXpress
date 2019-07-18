@@ -31,22 +31,32 @@ transXpress requires:
 ## Installation
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
-2. Setup conda environment (optional):
+
+2. Edit your ~/.condarc to look like this (the order of the channels matters):
+~~~~
+channel_priority: strict
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+~~~~
+
+3. Setup conda environment (optional):
 ~~~~
 conda create --name transxpress
 conda activate transxpress
 ~~~~
-3. Install snakemake and other dependencies:  
+
+4. Install snakemake and other dependencies:  
 ~~~~
-conda config --add channels bioconda
-conda config --add channels conda-forge
 conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
 ~~~~
-4. Install deeploc:
+5. Install deeploc:
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
       * Install deeploc: `/path/to/miniconda3/bin/python setup.py install` 
         (note: it is important to use the *full* path to python here)
-5. Checkout the transXpress code into the folder where you will be performing your assembly:
+
+6. Checkout the transXpress code into the folder where you will be performing your assembly:
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
