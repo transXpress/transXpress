@@ -34,7 +34,7 @@ transXpress requires:
 
 2. Edit your ~/.condarc to look like this (the order of the channels matters):
 ~~~~
-channel_priority: strict
+channel_priority: flexible
 channels:
   - bioconda
   - conda-forge
