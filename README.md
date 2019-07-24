@@ -25,6 +25,7 @@ transXpress requires:
 * edgeR (install via conda)
 * seqkit (install via conda)
 * wget (install via conda)
+* python 3.6, numpy 1.14, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
 * [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
 * basic Linux utitilies: split, awk, cut, gzip
 
@@ -43,12 +44,16 @@ conda activate transxpress
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority false
-conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
+conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget python=3.6 numpy=1.14 scipy=1.0 theano=1.0.1 six==1.11
 ~~~~
 4. Install deeploc:
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
-      * Install deeploc: `/path/to/miniconda3/bin/python setup.py install` 
-        (note: it is important to use the *full* path to python here)
+      * Install deeploc: 
+        ~~~~
+         pip install -r requirements.txt
+         python setup.py install
+        ~~~~
+        (make sure the conda python is used, or use the full path to python from your conda installation)
 
 5. Checkout the transXpress code into the folder in which you will be performing your assembly:
 ~~~~
