@@ -50,7 +50,6 @@ conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
       * Install deeploc: 
         ~~~~
-         pip install -r requirements.txt
          python setup.py install
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
