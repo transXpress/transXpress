@@ -42,6 +42,7 @@ conda activate transxpress
 ~~~~
 conda config --add channels bioconda
 conda config --add channels conda-forge
+conda config --set channel_priority false
 conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget
 ~~~~
 4. Install deeploc:
