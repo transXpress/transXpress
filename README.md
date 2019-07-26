@@ -44,7 +44,7 @@ conda activate transxpress
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority false
-conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget python=3.6 numpy=1.14 scipy=1.0 theano=1.0.1 six==1.11
+conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget python=3.6 numpy=1.14 scipy=1.0 theano=1.0.1 six==1.11 parallel
 ~~~~
 4. Install deeploc:
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
