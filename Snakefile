@@ -711,7 +711,7 @@ rule annotated_fasta:
           blastx_annotations[row[0]] = row[12] + " E=" + str(row[10])
   
       ## Load blastp results
-      print ("Loading blastp results from", input[4], file=log_handle)
+      print ("Loading blastp results from", input[5], file=log_handle)
       with open(input["blastp_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
@@ -719,7 +719,7 @@ rule annotated_fasta:
           blastp_annotations[row[0]] = row[12] + " E=" + str(row[10])
 
       ## Load pfam results
-      print ("Loading pfam predictions from", input[5], file=log_handle)
+      print ("Loading pfam predictions from", input[6], file=log_handle)
       with open(input["pfam_results"]) as input_handle:
         for line in input_handle:
           if (line.startswith("#")): continue
@@ -729,7 +729,7 @@ rule annotated_fasta:
             pfam_annotations[row[3]] = row[1] + " " + row[22] + "E=" + str(row[6])
 
       ## Load rfam results
-      print ("Loading rfam predictions from", input[5], file=log_handle)
+      print ("Loading rfam predictions from", input[4], file=log_handle)
       with open(input["rfam_results"]) as input_handle:
         for line in input_handle:
           if (line.startswith("#")): continue
@@ -738,7 +738,7 @@ rule annotated_fasta:
           rfam_annotations[row[2]] = row[1] + " " + row[17] + "E=" + str(row[15])
   
       ## Load tmhmm results
-      print ("Loading tmhmm predictions from", input[6], file=log_handle)
+      print ("Loading tmhmm predictions from", input[7], file=log_handle)
       with open(input["tmhmm_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
@@ -746,7 +746,7 @@ rule annotated_fasta:
           tmhmm_annotations[row[0]] = row[2] + " " + row[3] + " " + row[4] + " " + row[5]
       
       ## Load deeploc results
-      print ("Loading deeploc predictions from", input[7], file=log_handle)
+      print ("Loading deeploc predictions from", input[8], file=log_handle)
       with open(input["deeploc_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
