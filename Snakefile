@@ -693,7 +693,7 @@ rule annotated_fasta:
       deeploc_annotations = {}
   
       ## Load kallisto results
-      print ("Loading expression values from", input[2], file=log_handle)
+      print ("Loading expression values from", input["expression"], file=log_handle)
       with open(input["expression"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter='\t')
         columns = next(csv_reader)
@@ -703,7 +703,7 @@ rule annotated_fasta:
             expression_annotations[row[0]] += " " + columns[i] + "=" + str(row[i])
 
       ## Load blastx results
-      print ("Loading blastx results from", input[3], file=log_handle)
+      print ("Loading blastx results from", input["blastx_results"], file=log_handle)
       with open(input["blastx_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
@@ -711,7 +711,7 @@ rule annotated_fasta:
           blastx_annotations[row[0]] = row[12] + " E=" + str(row[10])
   
       ## Load blastp results
-      print ("Loading blastp results from", input[4], file=log_handle)
+      print ("Loading blastp results from", input["blastp_results"], file=log_handle)
       with open(input["blastp_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
@@ -719,7 +719,7 @@ rule annotated_fasta:
           blastp_annotations[row[0]] = row[12] + " E=" + str(row[10])
 
       ## Load pfam results
-      print ("Loading pfam predictions from", input[5], file=log_handle)
+      print ("Loading pfam predictions from", input["pfam_results"], file=log_handle)
       with open(input["pfam_results"]) as input_handle:
         for line in input_handle:
           if (line.startswith("#")): continue
@@ -729,7 +729,7 @@ rule annotated_fasta:
             pfam_annotations[row[3]] = row[1] + " " + row[22] + "E=" + str(row[6])
 
       ## Load rfam results
-      print ("Loading rfam predictions from", input[5], file=log_handle)
+      print ("Loading rfam predictions from", input["rfam_results"], file=log_handle)
       with open(input["rfam_results"]) as input_handle:
         for line in input_handle:
           if (line.startswith("#")): continue
@@ -738,7 +738,7 @@ rule annotated_fasta:
           rfam_annotations[row[2]] = row[1] + " " + row[17] + "E=" + str(row[15])
   
       ## Load tmhmm results
-      print ("Loading tmhmm predictions from", input[6], file=log_handle)
+      print ("Loading tmhmm predictions from", input["tmhmm_results"], file=log_handle)
       with open(input["tmhmm_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
@@ -746,7 +746,7 @@ rule annotated_fasta:
           tmhmm_annotations[row[0]] = row[2] + " " + row[3] + " " + row[4] + " " + row[5]
       
       ## Load deeploc results
-      print ("Loading deeploc predictions from", input[7], file=log_handle)
+      print ("Loading deeploc predictions from", input["deeploc_results"], file=log_handle)
       with open(input["deeploc_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
@@ -754,7 +754,7 @@ rule annotated_fasta:
           deeploc_annotations[row[0]] = str(row[1])
       
       ## Do the work
-      print ("Annotating FASTA file", input[0], "to", output[0], file=log_handle)
+      print ("Annotating FASTA file", input["transcriptome"], "to", output["transcriptome_annotated"], file=log_handle)
       with open(input["transcriptome"], "r") as input_fasta_handle, open(output["transcriptome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = record.id
@@ -765,7 +765,7 @@ rule annotated_fasta:
             record.description += "; rfam: " + rfam_annotations.get(transcript_id)
           Bio.SeqIO.write(record, output_fasta_handle, "fasta")
       
-      print ("Annotating FASTA file", input[1], "to", output[1], file=log_handle)
+      print ("Annotating FASTA file", input["proteome"], "to", output["proteome_annotated"], file=log_handle)
       with open(input["proteome"], "r") as input_fasta_handle, open(output["proteome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = re.sub("\\.p[0-9]+$", "", record.id)
