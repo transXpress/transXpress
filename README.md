@@ -53,8 +53,12 @@ conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython
          python setup.py install
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
+5. Instal [tmhmm.py](https://github.com/dansondergaard/tmhmm.py) via pip:
+~~~~
+pip install tmhmm.py
+~~~~
 
-5. Checkout the transXpress code into the folder in which you will be performing your assembly:
+6. Checkout the transXpress code into the folder in which you will be performing your assembly:
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
