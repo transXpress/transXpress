@@ -25,8 +25,10 @@ transXpress requires:
 * edgeR (install via conda)
 * seqkit (install via conda)
 * wget (install via conda)
+* tidyverse (required for Trinity, install via conda)
 * python 3.6, numpy 1.14, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
 * [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
+* tmhmm.py (install via pip)
 * basic Linux utitilies: split, awk, cut, gzip
 
 ## Installation
@@ -44,7 +46,7 @@ conda activate transxpress
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority false
-conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget python=3.6 numpy=1.14 scipy=1.0 theano=1.0.1 six==1.11 parallel
+conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget tidyverse python=3.6 numpy=1.14 scipy=1.0 theano=1.0.1 six==1.11 parallel
 ~~~~
 4. Install deeploc:
       * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
