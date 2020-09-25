@@ -4,6 +4,7 @@ import re
 import csv
 import Bio.SeqIO
 import Bio.Alphabet
+import subprocess
 from snakemake.utils import min_version
 
 min_version("5.4.1")
@@ -528,10 +529,63 @@ rule tmhmm_parallel:
     memory="2"
   threads:
     1
-  shell:
-    """
-    tmhmm --short < {input} > {output} 2> {log}
-    """
+  run:
+    output_dir = os.path.join("annotations", "tmhmm")
+
+    # create output directory
+    os.makedirs(output_dir, exist_ok=True)
+
+    # open the input file, output file and log file
+    with open(input[0], "r") as input_handle, open(output[0], "a+") as output_handle, open(log[0], "a+") as log_handle:
+
+      # iterate through individual sequences in input file, tmhmm.py can be executed with just one sequence at a time
+      for record in Bio.SeqIO.parse(input_handle, "fasta"):
+
+        # individual fasta headers must have an ID and description, separated by a space, otherwise error occurs
+        # see: https://github.com/dansondergaard/tmhmm.py/issues/16
+        # adding artificial "description" in header
+        record.description = " x"
+
+        # saving this fasta file
+        fasta_file =  os.path.join(output_dir, record.id + ".fasta")
+        Bio.SeqIO.write(record, fasta_file, "fasta")
+
+        # executing the tmhmm.py on created fasta
+        cmd_tmhmm = ['tmhmm', '-f', fasta_file]
+        subprocess.run(cmd_tmhmm, stdout = log_handle, stderr = log_handle)
+
+        # 3 files are created afterwards
+        # record.id.summary     record.id.annotation    record.id.plot
+
+        summary_file = record.id + ".summary"
+        annotation_file = record.id + ".annotation"
+        plot_file = record.id + ".plot"
+
+        # creating shorter output from summary file
+        with open(summary_file, "r") as inp:
+          final_topology = ''
+          num_of_helices = 0
+
+          for line in inp:
+            # split the line of format "start end topology" into list [start, end, topology]
+            split_line = re.split(r'\s+', line, 2)
+            start = split_line[0].strip()
+            end = split_line[1].strip()
+            topology = split_line[2].strip()
+
+            # update final string based on the topology
+            if (topology == 'inside'):
+              final_topology += 'i'
+            if (topology == 'outside'):
+              final_topology += 'o'
+            if ('transmembrane helix' in topology):
+              final_topology += start + '-' + end
+              num_of_helices += 1
+
+          output_handle.write(record.id + "\tPredHel=" + str(num_of_helices) + "\tTopology=" + final_topology + "\n")
+        os.remove(summary_file)
+        os.remove(annotation_file)
+        os.remove(plot_file)
 
 
 rule deeploc_parallel:
@@ -742,9 +796,9 @@ rule annotated_fasta:
       with open(input["tmhmm_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
-          if (len(row) < 6): continue
-          tmhmm_annotations[row[0]] = row[2] + " " + row[3] + " " + row[4] + " " + row[5]
-      
+          if (len(row) > 2):
+            tmhmm_annotations[row[0]] = row[1] + " " + row[2]
+ 
       ## Load deeploc results
       print ("Loading deeploc predictions from", input["deeploc_results"], file=log_handle)
       with open(input["deeploc_results"]) as input_handle:
