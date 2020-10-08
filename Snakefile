@@ -546,6 +546,11 @@ rule tmhmm_parallel:
         # adding artificial "description" in header
         record.description = " x"
 
+        # tmhmm.py does not handle 'X' in the sequence (happens when using RNASpades as an assembler and 'N' occurs in the transcript sequence)
+        # see: https://github.com/dansondergaard/tmhmm.py/issues/9
+        # removing 'X' from the sequence
+        record.seq = Seq(re.sub('X',"",str(record.seq)))
+
         # saving this fasta file
         fasta_file =  os.path.join(output_dir, record.id + ".fasta")
         Bio.SeqIO.write(record, fasta_file, "fasta")
