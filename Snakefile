@@ -3,9 +3,9 @@ import shutil
 import re
 import csv
 import Bio.SeqIO
-import Bio.Alphabet
 import subprocess
 from snakemake.utils import min_version
+from Bio.Seq import Seq
 
 min_version("5.4.1")
 
@@ -25,7 +25,7 @@ rule all:
     "transcriptome.fasta",
     "transcriptome.pep",
     "transcriptome_stats.txt",
-    "transcriptome_exN50.tsv.plot.pdf",
+    "ExN50_plot.pdf",
     "transcriptome_annotated.fasta",
     "transcriptome_annotated.pep",
     "transcriptome_TPM_blast.csv"
@@ -292,7 +292,7 @@ rule trinity_stats:
   output:
     stats="transcriptome_stats.txt",
     exN50="transcriptome_exN50.tsv",
-    exN50plot="transcriptome_exN50.tsv.plot.pdf"
+    exN50plot="ExN50_plot.pdf"
   log:
     "logs/trinity_exN50.log"
   params:
