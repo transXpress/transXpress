@@ -27,7 +27,7 @@ transXpress requires:
 * wget (install via conda)
 * tidyverse (required for Trinity, install via conda)
 * python 3.6, numpy 1.14, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
-* [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
+* [deeploc](https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0)
 * tmhmm.py (install via pip)
 * basic Linux utitilies: split, awk, cut, gzip
 
@@ -54,7 +54,7 @@ conda install trinity=2.11 trimmomatic bowtie2 python=3.6 biopython numpy=1.16 s
       * Download deeploc from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
       * Install deeploc: 
         ~~~~
-         pip install git+https://github.com/Lasagne/Lasagne.git#egg=Lasagne-0.2.dev1
+         pip install git+https://github.com/Lasagne/Lasagne.git#egg=Lasagne-0.2.dev1 (other requirements for deeploc are already installed via conda)
          python setup.py install
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
