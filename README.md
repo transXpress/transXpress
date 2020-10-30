@@ -48,7 +48,7 @@ conda config --add channels conda-forge
 conda config --set channel_priority false
 conda install "snakemake>=5" fastqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget
 conda install r bioconductor-edger r-tidyverse 
-conda install trinity=2.11 trimmomatic bowtie2 python=3.6 biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
+conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
 ~~~~
 4. Install deeploc:
       * Download deeploc from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
