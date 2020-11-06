@@ -27,7 +27,7 @@ transXpress requires:
 * wget (install via conda)
 * tidyverse (required for Trinity, install via conda)
 * python 3.6, numpy 1.14, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
-* [deeploc](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc)
+* [deeploc](https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0)
 * tmhmm.py (install via pip)
 * basic Linux utitilies: split, awk, cut, gzip
 
@@ -46,12 +46,15 @@ conda activate transxpress
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority false
-conda install snakemake fastqc trimmomatic trinity spades transdecoder biopython samtools bowtie2 infernal hmmer kallisto blast r bioconductor-edger seqkit wget r-tidyverse python=3.6 numpy=1.14 scipy=1.0 theano=1.0.1 six==1.11 parallel
+conda install "snakemake>=5" fastqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget
+conda install r bioconductor-edger r-tidyverse 
+conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
 ~~~~
 4. Install deeploc:
-      * Download deeploc from http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?deeploc
+      * Download deeploc from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
       * Install deeploc: 
         ~~~~
+         pip install git+https://github.com/Lasagne/Lasagne.git#egg=Lasagne-0.2.dev1 (other requirements for deeploc are already installed via conda)
          python setup.py install
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
