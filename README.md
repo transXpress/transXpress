@@ -36,13 +36,18 @@ transXpress requires:
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
 
-2. Setup conda environment (optional):
+2. Unset R_LIBS_SITE
+~~~~
+unset R_LIBS_SITE
+~~~~
+
+3. Setup conda environment (optional):
 ~~~~
 conda create --name transxpress
 conda activate transxpress
 ~~~~
 
-3. Install snakemake and other dependencies:  
+4. Install snakemake and other dependencies:  
 ~~~~
 conda config --add channels bioconda
 conda config --add channels conda-forge
@@ -51,7 +56,7 @@ conda install "snakemake>=5" fastqc transdecoder samtools infernal hmmer kallist
 conda install r bioconductor-edger r-tidyverse 
 conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
 ~~~~
-4. Install deeploc:
+5. Install deeploc:
       * Download deeploc from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
       * Install deeploc: 
         ~~~~
@@ -59,15 +64,15 @@ conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=
          python setup.py install
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
-5. Install targetp 2.0:
+6. Install targetp 2.0:
       * Download targetp 2.0 from http://www.cbs.dtu.dk/services/TargetP/ (go to Portable version)
       * add path to targetp /bin/ folder to the PATH variable
-6. Install [tmhmm.py](https://github.com/dansondergaard/tmhmm.py) via pip:
+7. Install [tmhmm.py](https://github.com/dansondergaard/tmhmm.py) via pip:
 ~~~~
 pip install tmhmm.py
 ~~~~
 
-7. Checkout the transXpress code into the folder in which you will be performing your assembly:
+8. Checkout the transXpress code into the folder in which you will be performing your assembly:
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
