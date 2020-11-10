@@ -613,6 +613,22 @@ rule deeploc_parallel:
     mv {output}.txt {output} &>> {log}
     """
 
+rule targetp_parallel:
+  input:
+    "annotations/chunks_pep/{index}.pep"
+  output:
+    "annotations/targetp/{index}.out"
+  log:
+    "logs/targetp_{index}.log"
+  params:
+    memory="2"
+  threads:
+    1
+  shell:
+    """
+    targetp -fasta {input} -format short -org {config[targetp]} -prefix {wildcards.index} &> {log}
+    mv {wildcards.index}_summary.targetp2 {output} &>> {log}
+    """
 
 rule kallisto:
   input:
@@ -728,7 +744,8 @@ rule annotated_fasta:
     blastp_results="annotations/sprotblastp_orfs.out",
     pfam_results="annotations/pfam_orfs.out",
     tmhmm_results="annotations/tmhmm_pep.out",
-    deeploc_results="annotations/deeploc_pep.out"
+    deeploc_results="annotations/deeploc_pep.out",
+    targetp_results="annotations/targetp_pep.out"
   output:
     transcriptome_annotated="transcriptome_annotated.fasta",
     proteome_annotated="transcriptome_annotated.pep",
@@ -750,6 +767,7 @@ rule annotated_fasta:
       rfam_annotations = {}
       tmhmm_annotations = {}
       deeploc_annotations = {}
+      targetp_annotations = {}
   
       ## Load kallisto results
       print ("Loading expression values from", input["expression"], file=log_handle)
@@ -811,6 +829,22 @@ rule annotated_fasta:
         for row in csv_reader:
           if (len(row) < 2): continue
           deeploc_annotations[row[0]] = str(row[1])
+
+      ## Load targetp results
+      translation =    {"SP": "Signal peptide",
+                        "mTP": "Mitochondrial transit peptide",
+                        "cTP": "chloroplast transit peptide",
+                        "luTP": "thylakoidal lumen composite transit peptide",
+                        "noTP": "no targeting peptide" }
+      print("Loading targetp predictions from", input["targetp_results"], file=log_handle)
+      with open(input["targetp_results"]) as input_handle:
+        for line in input_handle:
+          if (line.startswith("#")): continue
+          row = line.split()
+          if (len(row) >= 8):
+            targetp_annotations[row[0]] = translation[row[1]] + ", " + " ".join(row[7:])
+          elif (len(row) >= 2):
+            targetp_annotations[row[0]] = translation[row[1]]
       
       ## Do the work
       print ("Annotating FASTA file", input["transcriptome"], "to", output["transcriptome_annotated"], file=log_handle)
@@ -841,6 +875,8 @@ rule annotated_fasta:
             record.description += "; tmhmm: " + tmhmm_annotations.get(record.id)
           if record.id in deeploc_annotations:
             record.description += "; deeploc: " + deeploc_annotations.get(record.id)
+          if record.id in targetp_annotations:
+            record.description += "; targetp: " + targetp_annotations.get(record.id)
           # Add sequence ID prefix from configuration
           if config["annotated_fasta_prefix"]:
             record.id = config["annotated_fasta_prefix"] + "|" + record.id

@@ -26,8 +26,9 @@ transXpress requires:
 * seqkit (install via conda)
 * wget (install via conda)
 * tidyverse (required for Trinity, install via conda)
-* python 3.6, numpy 1.14, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
+* python 3.6, numpy 1.16, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
 * [deeploc](https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0)
+* [targetp 2.0](http://www.cbs.dtu.dk/services/TargetP/)
 * tmhmm.py (install via pip)
 * basic Linux utitilies: split, awk, cut, gzip
 
@@ -58,12 +59,15 @@ conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=
          python setup.py install
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
-5. Install [tmhmm.py](https://github.com/dansondergaard/tmhmm.py) via pip:
+5. Install targetp 2.0:
+      * Download targetp 2.0 from http://www.cbs.dtu.dk/services/TargetP/ (go to Portable version)
+      * add path to targetp /bin/ folder to the PATH variable
+6. Install [tmhmm.py](https://github.com/dansondergaard/tmhmm.py) via pip:
 ~~~~
 pip install tmhmm.py
 ~~~~
 
-6. Checkout the transXpress code into the folder in which you will be performing your assembly:
+7. Checkout the transXpress code into the folder in which you will be performing your assembly:
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
