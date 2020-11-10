@@ -36,7 +36,7 @@ transXpress requires:
 
 1. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
 
-2. Unset R_LIBS_SITE
+2. To ensure correct versions of R packages will be used unset R_LIBS_SITE
 ~~~~
 unset R_LIBS_SITE
 ~~~~
