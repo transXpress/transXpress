@@ -53,10 +53,8 @@ rule fastqc:
     # making directory for the fastqc summary files
     mkdir {output} &> {log}
     FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input}) &>> {log}
-    # unzipping the files with reads
-    for file in $FILES; do gunzip -c $file > "${{file%%.gz}}"; done &>> {log}
-    # running fasqc on them
-    for file in $FILES; do fastqc -f fastq -o {output} "${{file%%.gz}}"; done &>> {log}
+    # running fasqc on the files
+    for file in $FILES; do fastqc -f fastq -o {output} $file; done &>> {log}
     """
     
 checkpoint trimmomatic_split:
