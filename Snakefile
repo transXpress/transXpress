@@ -29,7 +29,8 @@ rule all:
     "transcriptome_annotated.fasta",
     "transcriptome_annotated.pep",
     "transcriptome_TPM_blast.csv",
-    "fastqc"
+    "fastqc",
+    "multiqc"
 
 rule clean:
   shell:
@@ -37,7 +38,7 @@ rule clean:
     if [ -f samples_trimmed.txt ]; then
       cut -f 2 < samples_trimmed.txt | xargs --no-run-if-empty rm -rf
     fi
-    rm -rf trinity_* rnaspades_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf
+    rm -rf trinity_* rnaspades_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf multiqc fastqc
     """
 
 rule fastqc:
@@ -57,6 +58,18 @@ rule fastqc:
     for file in $FILES; do fastqc -f fastq -o {output} $file; done &>> {log}
     """
     
+rule multiqc:
+  input:
+    "fastqc"
+  output:
+    directory("multiqc")
+  log:
+    "logs/multiqc.log"
+  shell:
+    """
+    mkdir {output} &> {log}
+    multiqc -o {output} {input} &>> {log}
+    """
 checkpoint trimmomatic_split:
   input:
     samples=config["samples_file"]
