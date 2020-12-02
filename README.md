@@ -83,7 +83,7 @@ mkdir transXpress
 cd transXpress
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
-and symbolically link its files and folders with your folder for assembly
+and symbolically link its files and folders with folder in which you will be performing your assembly:
 ~~~~
 mkdir assembly-dir
 ln -s path/to/your/transXpress/* path/to/your/assembly-dir
