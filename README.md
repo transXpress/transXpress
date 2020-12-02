@@ -77,11 +77,9 @@ pip install tmhmm.py
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
-or create transXpress folder and checkout the transXpress code into it
+or create transXpress folder
 ~~~~
-mkdir transXpress
-cd transXpress
-git clone https://github.com/transXpress/transXpress-snakemake.git .
+git clone https://github.com/transXpress/transXpress-snakemake.git
 ~~~~
 and symbolically link its files and folders with folder in which you will be performing your assembly:
 ~~~~
