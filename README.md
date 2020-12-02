@@ -77,6 +77,17 @@ pip install tmhmm.py
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
+or create transXpress folder and checkout the transXpress code into it
+~~~~
+mkdir transXpress
+cd transXpress
+git clone https://github.com/transXpress/transXpress-snakemake.git .
+~~~~
+and symbolically link its files and folders with your folder for assembly
+~~~~
+mkdir assembly-dir
+ln -s path/to/your/transXpress/* path/to/your/assembly-dir
+~~~~
 
 ## Input
 
@@ -89,7 +100,11 @@ cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
 ~~~
 
 Also take a look at the configuration file *config.yaml* and update as required.
-
+You can download reads from SRA with provided script:
+~~~~
+./sra_download.sh <SRR0000000> <SRR0000001> <...>
+~~~~
+where SRR0000000 is an SRA readset ID. E.g., SRR3883773
 ## Running transXpress
 
 Use the provided script:

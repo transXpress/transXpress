@@ -28,8 +28,8 @@ rule all:
     "ExN50_plot.pdf",
     "transcriptome_annotated.fasta",
     "transcriptome_annotated.pep",
-    "transcriptome_TPM_blast.csv"
-
+    "transcriptome_TPM_blast.csv",
+    "fastqc"
 
 rule clean:
   shell:
@@ -37,10 +37,28 @@ rule clean:
     if [ -f samples_trimmed.txt ]; then
       cut -f 2 < samples_trimmed.txt | xargs --no-run-if-empty rm -rf
     fi
-    rm -rf trinity_* rnaspades_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed*
+    rm -rf trinity_* rnaspades_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf
     """
 
-
+rule fastqc:
+  input:
+    samples=config["samples_file"]
+  output:
+    directory("fastqc")
+  log:
+    "logs/fastqc.log"
+  shell:
+    """
+    # run fastqc on input files
+    # making directory for the fastqc summary files
+    mkdir {output} &> {log}
+    FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input}) &>> {log}
+    # unzipping the files with reads
+    for file in $FILES; do gunzip -c $file > "${{file%%.gz}}"; done &>> {log}
+    # running fasqc on them
+    for file in $FILES; do fastqc -f fastq -o {output} "${{file%%.gz}}"; done &>> {log}
+    """
+    
 checkpoint trimmomatic_split:
   input:
     samples=config["samples_file"]
@@ -714,7 +732,7 @@ rule download_rfam:
     """
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz" &> {log}
     gunzip db/Rfam.cm.gz &>> {log}
-    cmpress db/Rfam.cm &>> {log}
+    cmpress db/Rfam.cm &>> {log}    
     """
 
 
@@ -729,7 +747,7 @@ rule download_eggnog:
     1
   shell:
     """
-    wget --directory-prefix db "http://eggnogdb.embl.de/download/latest/data/NOG/NOG.annotations.tsv.gz" &> {log}
+    wget --directory-prefix db "http://eggnogdb.embl.de/download/latest/data/NOG/NOG.annotations.tsv.gz" &> {log}    
     gunzip db/NOG.annotations.tsv.gz &>> {log}
     """
 

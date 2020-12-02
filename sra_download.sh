@@ -24,6 +24,6 @@ vdb-config --restore-defaults
 
 for DATASET_ID in "$@"; do
   echo Attempting to download: $DATASET_ID
-  fastq-dump -v $DATASET_ID --defline-seq '@$sn[_$rn]/$ri' --split-files --gzip
+  fastq-dump -$DATASET_ID --defline-seq '@$sn/$ri' --split-files --gzip
 done
 
