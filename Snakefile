@@ -70,6 +70,7 @@ rule multiqc:
     mkdir {output} &> {log}
     multiqc -o {output} {input} &>> {log}
     """
+    
 checkpoint trimmomatic_split:
   input:
     samples=config["samples_file"]
