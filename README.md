@@ -10,6 +10,7 @@ Also see our sister project: [transXpress-nextflow](https://github.com/transXpre
 transXpress requires:
 * snakemake 5.4.2+ (install via conda)
 * fastqc (install via conda)
+* multiqc (install via conda)
 * trimmomatic (install via conda)
 * Trinity (install via conda)
 * SPAdes (install via conda)
@@ -53,7 +54,7 @@ conda activate transxpress
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority false
-conda install "snakemake>=5" fastqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget sra-tools
+conda install "snakemake>=5" fastqc multiqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget sra-tools
 conda install r bioconductor-edger r-tidyverse
 conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
 ~~~~
@@ -77,6 +78,15 @@ pip install tmhmm.py
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
+or create transXpress folder
+~~~~
+git clone https://github.com/transXpress/transXpress-snakemake.git
+~~~~
+and symbolically link its files and folders with folder in which you will be performing your assembly:
+~~~~
+mkdir assembly-dir
+ln -s path/to/your/transXpress/* path/to/your/assembly-dir
+~~~~
 
 ## Input
 
@@ -89,7 +99,11 @@ cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
 ~~~
 
 Also take a look at the configuration file *config.yaml* and update as required.
-
+You can download reads from SRA with provided script:
+~~~~
+./sra_download.sh <SRR0000000> <SRR0000001> <...>
+~~~~
+where SRR0000000 is an SRA readset ID. E.g., SRR3883773
 ## Running transXpress
 
 Use the provided script:
