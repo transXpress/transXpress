@@ -10,6 +10,7 @@ Also see our sister project: [transXpress-nextflow](https://github.com/transXpre
 transXpress requires:
 * snakemake 5.4.2+ (install via conda)
 * fastqc (install via conda)
+* multiqc (install via conda)
 * trimmomatic (install via conda)
 * Trinity (install via conda)
 * SPAdes (install via conda)
@@ -53,7 +54,7 @@ conda activate transxpress
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority false
-conda install "snakemake>=5" fastqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget sra-tools
+conda install "snakemake>=5" fastqc multiqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget sra-tools
 conda install r bioconductor-edger r-tidyverse
 conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
 ~~~~
