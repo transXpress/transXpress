@@ -17,7 +17,7 @@ TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PAT
 # https://github.com/griffithlab/rnaseq_tutorial/wiki/Trinity-Assembly-And-Analysis
 
 # These rules don't need to be sent to a cluster
-localrules: all, clean, fastqc, multiqc, trimmomatic_split, trimmomatic_merge, samples_yaml_conversion, trinity_butterfly_split, transcriptome_copy
+localrules: all, clean, trimmomatic_split, trimmomatic_merge, samples_yaml_conversion, trinity_butterfly_split, transcriptome_copy
 
 rule all:
   input:
@@ -48,6 +48,10 @@ rule fastqc:
     directory("fastqc")
   log:
     "logs/fastqc.log"
+  params:
+    memory="4"
+  threads:
+    1
   shell:
     """
     # run fastqc on input files
@@ -65,6 +69,10 @@ rule multiqc:
     directory("multiqc")
   log:
     "logs/multiqc.log"
+  params:
+    memory="4"
+  threads:
+    1
   shell:
     """
     mkdir {output} &> {log}
