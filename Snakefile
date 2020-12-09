@@ -48,6 +48,10 @@ rule fastqc:
     directory("fastqc")
   log:
     "logs/fastqc.log"
+  params:
+    memory="4"
+  threads:
+    1
   shell:
     """
     # run fastqc on input files
@@ -65,6 +69,10 @@ rule multiqc:
     directory("multiqc")
   log:
     "logs/multiqc.log"
+  params:
+    memory="4"
+  threads:
+    1
   shell:
     """
     mkdir {output} &> {log}
