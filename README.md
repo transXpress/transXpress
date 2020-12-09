@@ -134,7 +134,7 @@ cd tests
 
 ## Possible problems when executing on cluster systems
 
-# Time limit
+### Time limit
 Depending on the setup of your cluster you may have to add time option in the transXpress.sh script.
 If default time (depends on your cluster setup) for submitted job is not suffiecient the job may be cancelled due to time limit.
 
@@ -145,7 +145,7 @@ to
 `snakemake --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "sbatch -o {log}.slurm.out -e {log}.slurm.err -n {threads} --mem {params.memory} --time=06:00:00" "$@"`
 This sets time limit to 6 hours. You may have to use different time limit based on size of reads used for assembly. See https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Computing-Requirements
 
-# Pipeline hangs when cluster cancels the job
+### Pipeline hangs when cluster cancels the job
 It is possible that cluster cancels the job but pipeline seems to be still running. This can happen because the pipeline does not receive information whether cluster job completed successfully, failed or is still running. You can add --cluster-status option and add script which detects the job status. 
 See https://snakemake.readthedocs.io/en/stable/tutorial/additional_features.html#using-cluster-status
 Alternatively you an use snakemake [profiles](https://github.com/Snakemake-Profiles/doc) which also contain status checking script. 
