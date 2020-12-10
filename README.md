@@ -99,6 +99,7 @@ cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
 ~~~
 
 Also take a look at the configuration file *config.yaml* and update as required.
+
 You can download reads from SRA with provided script:
 ~~~~
 ./sra_download.sh <SRR0000000> <SRR0000001> <...>
