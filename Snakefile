@@ -30,7 +30,8 @@ rule all:
     "transcriptome_annotated.pep",
     "transcriptome_TPM_blast.csv",
     "fastqc",
-    "multiqc"
+    "multiqc",
+    "edgeR_trans"
 
 rule clean:
   shell:
@@ -38,7 +39,7 @@ rule clean:
     if [ -f samples_trimmed.txt ]; then
       cut -f 2 < samples_trimmed.txt | xargs --no-run-if-empty rm -rf
     fi
-    rm -rf trinity_* rnaspades_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf multiqc fastqc
+    rm -rf trinity_* rnaspades_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf multiqc fastqc edgeR_trans
     """
 
 rule fastqc:
@@ -410,7 +411,7 @@ rule trinity_DE:
     samples=config["samples_file"],
     expression="kallisto.gene.counts.matrix"
   output:
-    "edgeR_trans"
+    directory("edgeR_trans")
   log:
     "logs/trinity_DE.log"
   params:
@@ -419,7 +420,15 @@ rule trinity_DE:
     1
   shell:
     """
-    {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input[1]} --samples_file {input[1]} --method edgeR --output {output} 2> {log}
+    # checking that there are enough samples to run edgeR
+    num=$(< {input.samples} sed '/^\s*$/d' | wc -l)
+    if [ $num -gt 1 ]
+      then
+        {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --dispersion {config[dispersion]} &> {log}
+      else
+        mkdir {output}
+        echo 'Not enough data to run differential expression analysis' &>> {log}
+    fi
     """
 
 
@@ -675,7 +684,8 @@ rule kallisto:
     gene_trans_map="transcriptome.gene_trans_map"
   output:
     "transcriptome_expression_isoform.tsv",
-    "transcriptome_expression_gene.tsv"
+    "transcriptome_expression_gene.tsv",
+    "kallisto.gene.counts.matrix"
   log:
     "logs/kallisto.log"
   params:

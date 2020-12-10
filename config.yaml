@@ -31,3 +31,5 @@ annotated_fasta_prefix: ""
 # For pfam, rfam, and blast searches
 e_value_threshold: "1e-6"
 
+# Dispersion value for edgeR differential expression analysis 
+dispersion: "0.1"
