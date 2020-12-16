@@ -424,6 +424,9 @@ rule trinity_DE:
     num=$(< {input.samples} sed '/^\s*$/d' | wc -l)
     if [ $num -gt 1 ]
       then
+        # Added dispersion parameter since it is needed when there are not enough replicates
+        # See https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Differential-Expression#identifying-de-features-no-biological-replicates-proceed-with-caution
+        # Learn more about dispersion in edgeR manual http://www.bioconductor.org/packages/release/bioc/manuals/edgeR/man/edgeR.pdf and 
         {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --dispersion {config[dispersion]} &> {log}
       else
         mkdir {output}
@@ -502,7 +505,7 @@ rule rfam_parallel:
   log:
     "logs/rfam_{index}.log"
   params:
-    memory="2"
+    memory="8" # increased memory from 2 to 8 becuase it was not sufficient
   threads:
     2
   shell:
@@ -689,7 +692,7 @@ rule kallisto:
   log:
     "logs/kallisto.log"
   params:
-    memory="2"
+    memory="8" # increased memory from 2 to 8 since it was not sufficient
   threads:
     8
   shell:
