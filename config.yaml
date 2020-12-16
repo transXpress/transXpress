@@ -32,4 +32,6 @@ annotated_fasta_prefix: ""
 e_value_threshold: "1e-6"
 
 # Dispersion value for edgeR differential expression analysis 
+# https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Differential-Expression#identifying-de-features-no-biological-replicates-proceed-with-caution
+# See more about information about dispersion in edgeR manual http://www.bioconductor.org/packages/release/bioc/manuals/edgeR/man/edgeR.pdf
 dispersion: "0.1"
