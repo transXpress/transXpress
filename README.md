@@ -131,7 +131,7 @@ cd tests
 
 ## Flow
 
-![The directed acyclic execution DAG of transXpress-snakemake-trinity](./tests/dag.svg )
+![The directed acyclic execution DAG of transXpress-snakemake-trinity](dag.svg )
 
 ## Possible problems when executing on cluster systems
 
