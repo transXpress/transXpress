@@ -15,6 +15,9 @@ assembler: "trinity"
 # may consider canging TRINITY_PARAMS += "  --min_kmer_cov 1 --min_glue 2  --no_normalize_reads"
 trinity_parameters: "--seqType fq"
 
+# set the organism (plant or non-plant) for targetp: pl or non-pl
+targetp: "non-pl"
+
 # Strand-specific RNA-Seq read orientation.
 # if paired: RF or FR,
 # if single: F or R.   (dUTP method = RF)
@@ -28,3 +31,5 @@ annotated_fasta_prefix: "test_prefix"
 # For pfam, rfam, and blast searches
 e_value_threshold: "1e-6"
 
+# Dispersion value for edgeR differential expression analysis 
+dispersion: "0.1"
