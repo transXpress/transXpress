@@ -4,7 +4,7 @@ import re
 import csv
 import Bio.SeqIO
 import subprocess
-from snakemake.utils import min_version
+from snakemake.utils import min_version, available_cpu_count
 from Bio.Seq import Seq
 
 min_version("5.4.1")
@@ -203,7 +203,7 @@ rule trinity_inchworm_chrysalis:
   params:
     memory="200"
   threads:
-    16
+    available_cpu_count()
   shell:
     """
     Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} &> {log}
@@ -280,7 +280,7 @@ rule trinity_final:
   params:
     memory="200"
   threads:
-    16
+    available_cpu_count()
   shell:
     """
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
@@ -299,7 +299,7 @@ rule rnaspades:
   params:
     memory="200"
   threads:
-    16
+    available_cpu_count()
   shell:
     """
     ##TODO = kmer shouldn't be fixed, & should be configurable from the beginning of the script (did run into some bugs with the auto parameter)
@@ -397,7 +397,7 @@ rule align_reads:
   params:
     memory="100"
   threads:
-    16
+    available_cpu_count()
   shell:
     """
     {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &> {log}
@@ -505,9 +505,9 @@ rule rfam_parallel:
   log:
     "logs/rfam_{index}.log"
   params:
-    memory="8" # increased memory from 2 to 8 becuase it was not sufficient
+    memory="8" # increased memory from 2 to 8 because it was not sufficient
   threads:
-    2
+    available_cpu_count()
   shell:
     """
     cmscan -E {config[e_value_threshold]} --rfam --cpu {threads} --tblout {output} {input[db]} {input[fasta]} &> {log}
@@ -525,7 +525,7 @@ rule pfam_parallel:
   params:
     memory="2"
   threads:
-    2
+    available_cpu_count()
   shell:
     """
     hmmscan -E {config[e_value_threshold]} --cpu {threads} --domtblout {output} {input[db]} {input[fasta]} &> {log}
@@ -543,7 +543,7 @@ rule sprot_blastp_parallel:
   params:
     memory="4"
   threads:
-    2
+    available_cpu_count()
   shell:
     """
     blastp -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
@@ -561,7 +561,7 @@ rule sprot_blastx_parallel:
   params:
     memory="4"
   threads:
-    2
+    available_cpu_count()
   shell:
     """
     blastx -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
@@ -694,7 +694,7 @@ rule kallisto:
   params:
     memory="8" # increased memory from 2 to 8 since it was not sufficient
   threads:
-    8
+    available_cpu_count()
   shell:
     """
     {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
