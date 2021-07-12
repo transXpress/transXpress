@@ -60,15 +60,22 @@ conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=
 ~~~~
 5. Install deeploc:
       * Download deeploc from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
-      * Install deeploc: 
+      * Unpack and install deeploc:
         ~~~~
-         pip install git+https://github.com/Lasagne/Lasagne.git#egg=Lasagne-0.2.dev1 (other requirements for deeploc are already installed via conda)
+         tar zxvf deeploc-1.0.All.tar.gz
+         cd deeploc-1.0
+         pip install git+https://github.com/Lasagne/Lasagne.git (other requirements for deeploc like Numpy, Scipy, Theano==1.01 are already installed via conda)
+         # install deeploc itself
          python setup.py install
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
 6. Install targetp 2.0:
-      * Download targetp 2.0 from http://www.cbs.dtu.dk/services/TargetP/ (go to Portable version)
-      * add path to targetp /bin/ folder to the PATH variable
+      * Download TargetP 2.0 from https://services.healthtech.dtu.dk/software.php
+      * extract the tarball and add path to targetp /bin/ folder to the PATH variable
+        ~~~~
+         tar zxvf targetp-2.0.Linux.tar.gz
+         export PATH=$PATH:`pwd`/targetp-2.0/bin
+        ~~~~
 7. Install [tmhmm.py](https://github.com/dansondergaard/tmhmm.py) via pip:
 ~~~~
 pip install tmhmm.py
@@ -78,7 +85,7 @@ pip install tmhmm.py
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
-or create transXpress folder
+or get ./transXpress folder created automatically
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git
 ~~~~
