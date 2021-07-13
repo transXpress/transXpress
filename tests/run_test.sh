@@ -7,7 +7,7 @@ MYCPUS="${NCPUS:-all}"
 
 MEM="${PBS_RESC_MEM:-$SLURM_MEM_PER_NODE}"
 if [ ! -z "$PBS_RESC_MEM" ]; then
-    MEM=$ENV{"PBS_RESC_MEM"} / 1024 / 1024 / 1024
+    MEM=`echo "${PBS_RESC_MEM}"/1024/1024/1024 | bc`
 elif [ ! -z "$SLURM_MEM_PER_NODE" ]; then
     MEM=$SLURM_MEM_PER_NODE
 else
