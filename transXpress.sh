@@ -12,6 +12,10 @@ if [ ! -z `which bsub` ]; then
   CLUSTER="LSF"
 fi
 
+if [ ! -z `which qsub` ]; then
+  CLUSTER="PBS"
+fi
+
 case "$CLUSTER" in
 "LSF")
   echo "Submitting snakemake jobs to LSF cluster"
@@ -21,8 +25,12 @@ case "$CLUSTER" in
   echo "Submitting snakemake jobs to SLURM cluster"
   snakemake --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "sbatch -o {log}.slurm.out -e {log}.slurm.err -n {threads} --mem {params.memory}GB" "$@"
   ;;
+"PBS")
+  echo "Submitting snakemake jobs to PBS/Torque cluster"
+  snakemake --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "qsub -o {log}.slurm.out -e {log}.slurm.err -l select=1:ncpus={threads},mem={params.memory}gb" "$@"
+  ;;
 *)
-  snakemake --cores 8 "$@"
+  snakemake --cores all "$@"
   ;;
 esac
 
