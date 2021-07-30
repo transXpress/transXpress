@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import re
 import csv
@@ -10,6 +11,10 @@ from Bio.Seq import Seq
 min_version("5.4.1")
 
 configfile: "config.yaml"
+
+for executable in ["samtools", "bowtie2", "kallisto", "deeploc", "targetp", "Trinity", "blastx", "blastp", "makeblastdb", "cmscan", "hmmscan", "fastqc", "rnaspades.py", "seqkit", "R"]:
+    if not shutil.which(executable):
+        sys.stderr.write("Warning: Cannot find %s in your PATH%s" % (executable, os.path.sep))
 
 TRINITY_EXECUTABLE_PATH=shutil.which("Trinity")
 TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))) ##Have to resolve the symbolic link that conda makes
@@ -240,7 +245,7 @@ rule trinity_butterfly_parallel:
   shell:
     """
     bash {input} &> {log}
-    cp {input} {output} &>> {log}
+    cp -p {input} {output} &>> {log}
     """
 
 def trinity_completed_parallel_jobs(wildcards):
@@ -319,8 +324,8 @@ rule transcriptome_copy:
     "logs/transcriptome_copy.log"
   shell:
     """
-    cp {input.transcriptome} {output.transcriptome} &> {log}
-    cp {input.gene_trans_map} {output.gene_trans_map} &>> {log}
+    cp -p {input.transcriptome} {output.transcriptome} &> {log}
+    cp -p {input.gene_trans_map} {output.gene_trans_map} &>> {log}
     """
 
 
@@ -361,7 +366,7 @@ rule transdecoder_longorfs:
     """
     rm -rf {input.transcriptome}.transdecoder_dir &> {log}
     TransDecoder.LongOrfs -t {input.transcriptome} --output_dir transdecoder &>> {log} 
-    cp transdecoder/longest_orfs.pep {output.orfs} &>> {log}
+    cp -p transdecoder/longest_orfs.pep {output.orfs} &>> {log}
     """
 
 
@@ -381,7 +386,7 @@ rule transdecoder_predict:
   shell:
     """
     TransDecoder.Predict -t {input.transcriptome} --output_dir transdecoder --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
-    cp {input.transcriptome}.transdecoder.pep {output} &>> {log}
+    cp -p {input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
 
 
@@ -700,17 +705,17 @@ rule kallisto:
     {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
     {TRINITY_HOME}/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv &>> {log}
     if [ -f kallisto.isoform.TMM.EXPR.matrix ]; then
-      cp kallisto.isoform.TMM.EXPR.matrix {output[0]} &>> {log}
+      cp -p kallisto.isoform.TMM.EXPR.matrix {output[0]} &>> {log}
     elif [ -f kallisto.isoform.TPM.not_cross_norm ]; then
-      cp kallisto.isoform.TPM.not_cross_norm {output[0]} &>> {log}
+      cp -p kallisto.isoform.TPM.not_cross_norm {output[0]} &>> {log}
     else
       echo Neither kallisto.isoform.TMM.EXPR.matrix or kallisto.isoform.TPM.not_cross_norm were produced
       exit 1
     fi
     if [ -f kallisto.gene.TMM.EXPR.matrix ]; then
-      cp kallisto.gene.TMM.EXPR.matrix {output[1]} &>> {log}
+      cp -p kallisto.gene.TMM.EXPR.matrix {output[1]} &>> {log}
     elif [ -f kallisto.gene.TPM.not_cross_norm ]; then
-      cp kallisto.gene.TPM.not_cross_norm {output[1]} &>> {log}
+      cp -p kallisto.gene.TPM.not_cross_norm {output[1]} &>> {log}
     else
       echo Neither kallisto.gene.TMM.EXPR.matrix or kallisto.gene.TPM.not_cross_norm were produced
       exit 1
