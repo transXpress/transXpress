@@ -81,7 +81,15 @@ conda install "trinity>=2.11" trimmomatic bowtie2 "python>=3.6" biopython numpy=
 pip install tmhmm.py
 ~~~~
 
-8. Checkout the transXpress code into the folder in which you will be performing your assembly:
+8. Check that the dependencies are installed
+~~~~
+for p in snakemake fastqc multiqc transdecoder samtools infernal hmmer kallisto \
+    blast seqkit wget sra-tools bioconductor-edger r-tidyverse trinity trimmomatic \
+    bowtie2 biopython numpy scipy theano six parallel spades ; do echo "package $p";
+    conda list | grep "$p"; done
+~~~~
+
+9. Checkout the transXpress code into the folder in which you will be performing your assembly:
 ~~~~
 git clone https://github.com/transXpress/transXpress-snakemake.git .
 ~~~~
