@@ -1,3 +1,5 @@
-SRR6345446	first_dataset	test_data/SRR6345446_first5k_1.fastq.gz	test_data/SRR6345446_first5k_2.fastq.gz
-SRR6345446      second_dataset  test_data/SRR6345446_second5k_1.fastq.gz  test_data/SRR6345446_second5k_2.fastq.gz
-
+SRR6345446	SRR6345446.repl1	test_data/SRR6345446_first5k_1.fastq.gz	test_data/SRR6345446_first5k_2.fastq.gz
+SRR6345446	SRR6345446.repl2	test_data/SRR6345446_second5k_1.fastq.gz test_data/SRR6345446_second5k_2.fastq.gz
+SRR2103848	SRR2103848.repl1	test_data/SRR2103848_first5k_1.fastq.gz test_data/SRR2103848_first5k_2.fastq.gz
+SRR2103848	SRR2103848.repl2	test_data/SRR2103848_second5k_1.fastq.gz test_data/SRR2103848_second5k_2.fastq.gz
+SRR2103848	SRR2103848.repl3	test_data/SRR2103848_third5k_1.fastq.gz test_data/SRR2103848_third5k_2.fastq.gz
