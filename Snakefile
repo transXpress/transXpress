@@ -426,16 +426,17 @@ rule trinity_DE:
   shell:
     """
     # checking that there are enough samples to run edgeR
-    num=$(< {input.samples} sed '/^\s*$/d' | wc -l)
+    # Added dispersion parameter since it is needed when there are not enough replicates
+    # See https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Differential-Expression#identifying-de-features-no-biological-replicates-proceed-with-caution
+    # Learn more about dispersion in edgeR manual http://www.bioconductor.org/packages/release/bioc/manuals/edgeR/man/edgeR.pdf and
+    num=$(expr `awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` - `awk '{{print $1}}' {input.samples} | sort | uniq | wc -l`)
     if [ $num -gt 1 ]
       then
-        # Added dispersion parameter since it is needed when there are not enough replicates
-        # See https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Differential-Expression#identifying-de-features-no-biological-replicates-proceed-with-caution
-        # Learn more about dispersion in edgeR manual http://www.bioconductor.org/packages/release/bioc/manuals/edgeR/man/edgeR.pdf and 
-        {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --dispersion {config[dispersion]} &> {log}
+        # see logs/trinity_DE.log how samples, replicates and contrasts were detected actually
+        {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} &> {log}
       else
-        mkdir {output}
-        echo 'Not enough data to run differential expression analysis' &>> {log}
+        echo "No biological replicates to run proper differential expression analysis, last-resorting to edgeR with --dispersion {config[dispersion]}" &>> {log}
+        {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} --dispersion {config[dispersion]} &> {log}
     fi
     """
 
