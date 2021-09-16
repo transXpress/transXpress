@@ -1,7 +1,6 @@
-# transXpress-snakemake
-transXpress: a [Snakemake](https://snakemake.readthedocs.io/en/stable/) pipeline for rapid de novo transcriptome assembly and annotation
+![transXpress](logo/Transxpress_Logo_RGB.png)
 
-Also see our sister project: [transXpress-nextflow](https://github.com/transXpress/transXpress-nextflow)
+transXpress: a [Snakemake](https://snakemake.readthedocs.io/en/stable/) pipeline for rapid de novo transcriptome assembly and annotation
 
 ## Intro
 
