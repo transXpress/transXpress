@@ -90,16 +90,7 @@ for p in snakemake fastqc multiqc transdecoder samtools infernal hmmer kallisto 
 
 9. Checkout the transXpress code into the folder in which you will be performing your assembly:
 ~~~~
-git clone https://github.com/transXpress/transXpress-snakemake.git .
-~~~~
-or get ./transXpress folder created automatically
-~~~~
-git clone https://github.com/transXpress/transXpress-snakemake.git
-~~~~
-and symbolically link its files and folders with folder in which you will be performing your assembly:
-~~~~
-mkdir assembly-dir
-ln -s path/to/your/transXpress/* path/to/your/assembly-dir
+git clone https://github.com/transXpress/transXpress.git
 ~~~~
 
 ## Input
@@ -143,9 +134,9 @@ cd tests
 ~~~~
 
 
-## Flow
+## The directed acyclic graph (DAG) of the transXpress pipeline execution
 
-![The directed acyclic execution DAG of transXpress-snakemake-trinity](dag.svg )
+![The directed acyclic execution graph](dag.svg )
 
 ## Possible problems when executing on cluster systems
 
