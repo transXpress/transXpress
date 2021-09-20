@@ -424,8 +424,8 @@ rule trinity_DE:
     # Added dispersion parameter since it is needed when there are not enough replicates
     # See https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Differential-Expression#identifying-de-features-no-biological-replicates-proceed-with-caution
     # Learn more about dispersion in edgeR manual http://www.bioconductor.org/packages/release/bioc/manuals/edgeR/man/edgeR.pdf and
-    num=$(expr `awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` - `awk '{{print $1}}' {input.samples} | sort | uniq | wc -l`)
-    if [ $num -gt 1 ]
+    num_replicates_minus_samples=$(expr `awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` - `awk '{{print $1}}' {input.samples} | sort | uniq | wc -l`)
+    if [ $num_replicates_minus_samples -gt 1 ]
       then
         # see logs/trinity_DE.log how samples, replicates and contrasts were detected actually
         {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} &> {log}
