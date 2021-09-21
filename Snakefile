@@ -14,7 +14,7 @@ configfile: "config.yaml"
 
 for executable in ["samtools", "bowtie2", "kallisto", "deeploc", "targetp", "Trinity", "blastx", "blastp", "makeblastdb", "cmscan", "hmmscan", "fastqc", "rnaspades.py", "seqkit", "R"]:
     if not shutil.which(executable):
-        sys.stderr.write("Warning: Cannot find %s in your PATH%s" % (executable, os.path.sep))
+        sys.stderr.write("Warning: Cannot find %s in your PATH%s" % (executable, os.linesep))
 
 TRINITY_EXECUTABLE_PATH=shutil.which("Trinity")
 TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))) ##Have to resolve the symbolic link that conda makes
@@ -347,7 +347,45 @@ rule trinity_final:
 
 rule rnaspades:
   """
-  Runs rnaSPAdes assembly.
+  Runs rnaSPAdes assembly. We want to get the best results from highly uneven coverage
+  RNAseq data hence we cannot rely on built-in two k-mer sizes picked at 1/3 and 1/2 of
+  read length. It is safe to start with low k-mers and incrementally redo assembly with
+  larger k-mers while preserving previously obtained contigs. The maximum k-mer size handled
+  by SPAdes is 127.
+  Note: Abyss assembler has max 192 (~2/3 of 250) but it can be set larger, see
+  https://github.com/bcgsc/abyss .
+
+  With sufficiently high-enough coverage (at low k-mer sizes) there are no mis-assemblies
+  but to some extent some unnecessary gaps arise due to short k-mer size being used.
+  Some of the gaps get closed by additional assemblies using higher k-mer size.
+  Please refer to https://github.com/ablab/spades#sec3.2 and that 21,33,55 is selected
+  for single-cell datasets by default, for generally good and 2x250 Illumina reads the
+  following series is recommended: 21,33,55,77,99,127. For 2x150 reads 21,33,55,77
+  is the default.
+
+  For non-ideal datasets with uneven coverage and uneven GC content 21,33,55 is recommended
+  as a good start assuming there will be at least enough coverage. For longer k-mer sizes
+  closer to the theoretical ideal it is expected the coverage will be in general not sufficient.
+  Provided the results from a previous iteration are used as input for subsequent assembly
+  step, if enough computing resources are available, it is recommended to include even longer
+  k-mer values, up to maximum 127 handled by SPAdes.
+
+  SPAdes exits badly when some k-mer is too large
+  https://github.com/mossmatters/HybPiper/issues/5
+
+  https://currentprotocols.onlinelibrary.wiley.com/doi/full/10.1002/cpbi.102
+  http://seqanswers.com/forums/showthread.php?t=57527
+
+  Other other assemblers also allow for multiple k-mer sizes:
+
+  SKESA assembler is using 11 k-mer sizes for incremental assembly.
+  https://genomebiology.biomedcentral.com/articles/10.1186/s13059-018-1540-z
+
+  Unicycler picks 10 k-mer values to be used by SPAdes ranging 20-95% of read length
+  https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005595
+
+  Pincho pipeline uses 5 different k-mer values for every assembler it uses:
+  https://doi.org/10.3390/genes12070953
   """
   input:
     samples="samples_trimmed.yaml",
@@ -363,8 +401,22 @@ rule rnaspades:
     16
   shell:
     """
-    ##TODO = kmer shouldn't be fixed, & should be configurable from the beginning of the script (did run into some bugs with the auto parameter)
-    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out --only-assembler -k 47 &> {log}
+    # get a space delimited listing of all input R1 and R2 FASTQ files to be passed down to 'seqkit stats' for analysis of read lengths
+    myfiles=$(awk '{{print $3,$4}}' test_samples.txt | tr '\\n' ' ') 2>> {log}
+    # echo "myfiles=$myfiles"
+    # obtain tabular output from seqkit describing minimum avg read length as integer
+    max_k=$(seqkit stats -T $myfiles | tail -n +2 | awk 'BEGIN{a="NaN"}{{if ($7<0+a) a=$7}} END{{print a}}' | sed -e 's/\.[0-9]*//') 2>> {log}
+    # echo "max_k=$max_k"
+    one_third=$(expr $max_k / 3) 2>> {log}
+    # echo "one_third=$one_third"
+    # get upper k-mer size ~ 2/3 of the input read length increased a bit
+    two_thirds=$(echo "(2*$one_third)+10" | bc) 2>> {log}
+    # echo "one_third=$one_third two_thirds=$two_thirds"
+    # get the series of k-mer sizes as odd numbers with step-size 10, ensuring we get slightly above the theoretically ideal 2/3 value
+    # k-mer size 29 is the minimum k-mer value supported by rnaspades
+    k_series=$(seq -s, 29 10 $two_thirds | tr '\\n' ' ' | sed 's/ $//') 2>> {log}
+    # echo "max_k=$max_k k_series=$k_series"
+    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out --only-assembler -k $k_series &> {log}
     ##Make a fake gene_trans_map file
     seqkit seq -n {output.transcriptome} | while read id ; do echo -e "$id\\t$id" ; done > {output.gene_trans_map} 2>> {log}
     """
@@ -409,7 +461,11 @@ rule trinity_stats:
     1
   shell:
     """
-    {TRINITY_HOME}/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
+    if [ {config[assembler]} -eq 'trinity' ]; then
+        {TRINITY_HOME}/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
+    else
+        {TRINITY_HOME}/util/TrinityStats.pl {input.transcriptome} | sed -e 's/trinity/rnaspades/g' > {output.stats} 2> {log}
+    fi
     {TRINITY_HOME}/util/misc/contig_ExN50_statistic.pl {input.expression} {input.transcriptome} > {output.exN50} 2>> {log}
     {TRINITY_HOME}/util/misc/plot_ExN50_statistic.Rscript {output.exN50} &>> {log}
     """
