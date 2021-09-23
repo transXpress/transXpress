@@ -55,7 +55,7 @@ Removes files from the transxpress directory when specifically called by the use
     if [ -f samples_trimmed.txt ]; then
       cut -f 2 < samples_trimmed.txt | xargs --no-run-if-empty rm -rf
     fi
-    rm -rf trinity_* rnaspades_* tmp* log* TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf multiqc fastqc edgeR_trans
+    rm -rf trinity_* rnaspades_* tmp* log TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf multiqc fastqc edgeR_trans
     """
 
 
