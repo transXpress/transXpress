@@ -25,11 +25,9 @@ TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PAT
 localrules: all, clean, trimmomatic_split, trimmomatic_merge, samples_yaml_conversion, trinity_butterfly_split, transcriptome_copy
 
 rule all:
-
-"""
-List of target files of the transxpress pipeline
-"""
-
+  """
+  List of target files of the transxpress pipeline.
+  """
   input:
     "samples_trimmed.txt",
     "transcriptome.fasta",
@@ -45,10 +43,9 @@ List of target files of the transxpress pipeline
 
 
 rule clean:
-
-"""
-Removes files from the transxpress directory when specifically called by the user
-"""
+  """
+  Removes files from the transxpress directory when specifically called by the user.
+  """
 
   shell:
     """
@@ -60,11 +57,9 @@ Removes files from the transxpress directory when specifically called by the use
 
 
 rule fastqc:
-
-"""
-Runs fastQC on individual input reads files.
-"""
-
+  """
+  Runs fastQC on individual input reads files.
+  """
   input:
     samples=config["samples_file"]
   output:
@@ -87,11 +82,9 @@ Runs fastQC on individual input reads files.
 
 
 rule multiqc:
-
-"""
-Creates multiQC report from individual fastQC reports.
-"""
-
+  """
+  Creates multiQC report from individual fastQC reports.
+  """
   input:
     "fastqc"
   output:
@@ -110,12 +103,10 @@ Creates multiQC report from individual fastQC reports.
 
 
 checkpoint trimmomatic_split:
-
-"""
-Splits file with information about all reads files into seperate files
-so they can be processed with trimmomatic in parallel.
-"""   
-
+  """
+  Splits file with information about all reads files into separate files
+  so they can be processed with trimmomatic in parallel.
+  """   
   input:
     samples=config["samples_file"]
   output:
@@ -130,11 +121,9 @@ so they can be processed with trimmomatic in parallel.
 
 
 rule trimmomatic_parallel:
-
-"""
-Processes individual read files with trimmomatic.
-"""
-
+  """
+  Processes individual read files with trimmomatic.
+  """
   input:
     "trimmomatic/sample_{job_index}"
   output:
@@ -165,11 +154,9 @@ Processes individual read files with trimmomatic.
 
 
 def trimmomatic_completed_parallel_jobs(wildcards):
-
-"""
-Returns names of files with information about files processed with trimmomatic.
-"""
-
+  """
+  Returns names of files with information about files processed with trimmomatic.
+  """
   parallel_dir = checkpoints.trimmomatic_split.get(**wildcards).output[0]
   job_ids = glob_wildcards(os.path.join(parallel_dir, "sample_{job_index}")).job_index
   completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
@@ -177,11 +164,9 @@ Returns names of files with information about files processed with trimmomatic.
 
 
 rule trimmomatic_merge:
-
-"""
-Creates a file with information about all reads files processed with trimmomatic.
-"""
-
+  """
+  Creates a file with information about all reads files processed with trimmomatic.
+  """
   input:
     trimmomatic_completed_parallel_jobs
   output:
@@ -195,12 +180,10 @@ Creates a file with information about all reads files processed with trimmomatic
 
 
 rule samples_yaml_conversion:
-
-"""
-Converts the file with information about all trimmed reads files into a yaml
-format used by rnaSPAdes.
-"""
-
+  """
+  Converts the file with information about all trimmed reads files into a yaml
+  format used by rnaSPAdes.
+  """
   input:
     samples_txt="samples_trimmed.txt"
   output:
@@ -251,11 +234,9 @@ format used by rnaSPAdes.
 
 
 rule trinity_inchworm_chrysalis:
-
-"""
-Runs first two stages of Trinity assembly (Inchworm and Chrysalis).
-"""
-
+  """
+  Runs first two stages of Trinity assembly (Inchworm and Chrysalis).
+  """
   input:
     samples="samples_trimmed.txt",
   output:
@@ -273,12 +254,10 @@ Runs first two stages of Trinity assembly (Inchworm and Chrysalis).
 
 
 checkpoint trinity_butterfly_split:
-
-"""
-Preparation for last stage of Trinity (Butterfly) parallelization by splitting
-the commands into indipendent parts.
-"""
-
+  """
+  Preparation for last stage of Trinity (Butterfly) parallelization by splitting
+  the commands into independent parts.
+  """
   input:
     "trinity_out_dir/recursive_trinity.cmds"
   output:
@@ -295,11 +274,9 @@ the commands into indipendent parts.
 
 
 rule trinity_butterfly_parallel:
-
-"""
-Runs Trinity Butterfly commands (which were split into parts) in parallel.
-"""
-
+  """
+  Runs Trinity Butterfly commands (which were split into parts) in parallel.
+  """
   input:
     "trinity_out_dir/parallel_jobs/job_{job_index}"
   output:
@@ -318,11 +295,9 @@ Runs Trinity Butterfly commands (which were split into parts) in parallel.
 
 
 def trinity_completed_parallel_jobs(wildcards):
-
-"""
-Returns filenames of the files processed in parallel.
-"""
-
+  """
+  Returns filenames of the files processed in parallel.
+  """
   parallel_dir = checkpoints.trinity_butterfly_split.get(**wildcards).output[0]
   job_ids = glob_wildcards(os.path.join(parallel_dir, "job_{job_index}")).job_index
   completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
@@ -349,11 +324,9 @@ rule trinity_butterfly_parallel_merge:
 
 
 rule trinity_final:
-
-"""
-Runs the final Trinity assembly.
-"""
-
+  """
+  Runs the final Trinity assembly.
+  """
   input:
     cmds_completed="trinity_out_dir/recursive_trinity.cmds.completed",
     samples="samples_trimmed.txt"
@@ -373,11 +346,9 @@ Runs the final Trinity assembly.
 
 
 rule rnaspades:
-
-"""
-Runs rnaSPAdes assembly.
-"""
-
+  """
+  Runs rnaSPAdes assembly.
+  """
   input:
     samples="samples_trimmed.yaml",
   output:
@@ -400,11 +371,9 @@ Runs rnaSPAdes assembly.
  
 
 rule transcriptome_copy:
-
-"""
-Copies the assembled transcriptome to the transxpress directory.
-"""
-
+  """
+  Copies the assembled transcriptome to the transxpress directory.
+  """
   input:
     transcriptome=rules.rnaspades.output.transcriptome if config["assembler"]=="rnaspades" else rules.trinity_final.output.transcriptome,
     gene_trans_map=rules.rnaspades.output.gene_trans_map if config["assembler"]=="rnaspades" else rules.trinity_final.output.gene_trans_map,
@@ -421,12 +390,10 @@ Copies the assembled transcriptome to the transxpress directory.
 
 
 rule trinity_stats:
-
-"""
-Runs Trinity script to get statistics about the assembled transcriptome
-(number of transcripts, genes, GC content, EXN50).
-"""
-
+  """
+  Runs Trinity script to get statistics about the assembled transcriptome
+  (number of transcripts, genes, GC content, EXN50).
+  """
   input:
     transcriptome="transcriptome.fasta",
     expression="transcriptome_expression_isoform.tsv"
@@ -449,11 +416,9 @@ Runs Trinity script to get statistics about the assembled transcriptome
 
 
 rule transdecoder_longorfs:
-
-"""
-Runs first stage of Transdecoder extracting the long open reading frames.
-"""
-
+  """
+  Runs first stage of Transdecoder extracting the long open reading frames.
+  """
   input:
     transcriptome="transcriptome.fasta",
   output:
@@ -473,12 +438,10 @@ Runs first stage of Transdecoder extracting the long open reading frames.
 
 
 rule transdecoder_predict:
-
-"""
-Runs second stage of Transdecoder predicting the likely coding regions based
-on Pfam and SwissProt hits.
-"""
-
+  """
+  Runs second stage of Transdecoder predicting the likely coding regions based
+  on Pfam and SwissProt hits.
+  """
   input:
     transcriptome="transcriptome.fasta",
     pfam="annotations/pfam_orfs.out",
@@ -499,13 +462,11 @@ on Pfam and SwissProt hits.
 
 
 rule align_reads:
-
-"""
-Not run by default.
-Runs Trinity script aligning the reads to the transcriptome using Bowtie2
-and estimating the abundance with RSEM.
-"""
-
+  """
+  Not run by default.
+  Runs Trinity script aligning the reads to the transcriptome using Bowtie2
+  and estimating the abundance with RSEM.
+  """
   input:
     samples=config["samples_file"],
     transcriptome="transcriptome.fasta",
@@ -527,11 +488,9 @@ and estimating the abundance with RSEM.
 
 
 rule trinity_DE:
-
-"""
-Runs Trinity script to perform differential expression analysis using edgeR.
-"""
-
+  """
+  Runs Trinity script to perform differential expression analysis using edgeR.
+  """
   input:
     samples=config["samples_file"],
     expression="kallisto.gene.counts.matrix"
@@ -565,12 +524,10 @@ Runs Trinity script to perform differential expression analysis using edgeR.
 # seqkit seq -i {input} | seqkit replace -s -p "\*" -r "" | seqkit split -f -s 1 -O {output}
 # however, there seems to be a problem in seqkit: https://github.com/shenwei356/seqkit/issues/65
 checkpoint fasta_split:
-
-"""
-Splits the transcriptome files (.fasta and .pep) into smaller files so
-they can be processed (annotated) in parallel.
-"""
-
+  """
+  Splits the transcriptome files (.fasta and .pep) into smaller files so
+  they can be processed (annotated) in parallel.
+  """
   input:
     "transcriptome.{extension}"
   output:
@@ -605,11 +562,9 @@ they can be processed (annotated) in parallel.
         
 
 def parallel_annotation_tasks(wildcards):
-
-"""
-Returns filenames of files which were annotated in parallel.
-"""
-
+  """
+  Returns filenames of files which were annotated in parallel.
+  """
   parallel_dir = checkpoints.fasta_split.get(**wildcards).output[0]
   job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}." + wildcards["extension"])).index
   completed_files = expand("annotations/{task}/{index}.out",index=job_ids, task=wildcards["task"])
@@ -617,11 +572,9 @@ Returns filenames of files which were annotated in parallel.
 
 
 rule annotation_merge_fasta:
-
-"""
-Merges files that were annotated in parallel into a single file.
-"""
-
+  """
+  Merges files that were annotated in parallel into a single file.
+  """
   input:
     parallel_annotation_tasks
   output:
@@ -639,11 +592,9 @@ Merges files that were annotated in parallel into a single file.
 
 
 rule rfam_parallel:
-
-"""
-Runs cmscan on Rfam database on smaller nucleotide files in parallel.
-"""
-
+  """
+  Runs cmscan on Rfam database on smaller nucleotide files in parallel.
+  """
   input:
     fasta="annotations/chunks_fasta/{index}.fasta",
     db="db/Rfam.cm"
@@ -662,11 +613,9 @@ Runs cmscan on Rfam database on smaller nucleotide files in parallel.
 
 
 rule pfam_parallel:
-
-"""
-Runs hmmscan on Pfam database on smaller protein files in parallel.
-"""
-
+  """
+  Runs hmmscan on Pfam database on smaller protein files in parallel.
+  """
   input:
     fasta="annotations/chunks_orfs/{index}.orfs",
     db="db/Pfam-A.hmm"
@@ -686,11 +635,9 @@ Runs hmmscan on Pfam database on smaller protein files in parallel.
 
 
 rule sprot_blastp_parallel:
-
-"""
-Runs blast search on SwissProt database on smaller protein files in parallel.
-"""
-
+  """
+  Runs blast search on SwissProt database on smaller protein files in parallel.
+  """
   input:
     fasta="annotations/chunks_orfs/{index}.orfs",
     db="db/uniprot_sprot.fasta"
@@ -709,11 +656,9 @@ Runs blast search on SwissProt database on smaller protein files in parallel.
 
 
 rule sprot_blastx_parallel:
-
-"""
-Runs blast search on SwissProt database on smaller nucleotide files in parallel.
-"""
-
+  """
+  Runs blast search on SwissProt database on smaller nucleotide files in parallel.
+  """
   input:
     fasta="annotations/chunks_fasta/{index}.fasta",
     db="db/uniprot_sprot.fasta"
@@ -732,12 +677,10 @@ Runs blast search on SwissProt database on smaller nucleotide files in parallel.
 
 
 rule tmhmm_parallel:
-
-"""
-Runs tmhmm.py on smaller protein files in parallel to predict transmembrane
-topology.
-"""
-
+  """
+  Runs tmhmm.py on smaller protein files in parallel to predict transmembrane
+  topology.
+  """
   input:
     "annotations/chunks_pep/{index}.pep"
   output:
@@ -813,12 +756,10 @@ topology.
 
 
 rule deeploc_parallel:
-
-"""
-Runs Deeploc on smaller protein files in parallel to predict their subcellular
-localization.
-"""
-
+  """
+  Runs Deeploc on smaller protein files in parallel to predict their subcellular
+  localization.
+  """
   input:
     "annotations/chunks_pep/{index}.pep"
   output:
@@ -839,12 +780,10 @@ localization.
     """
 
 rule targetp_parallel:
-
-"""
-Runs TargetP on smaller protein files to predict presence and type of
-targeting peptide.
-"""
-
+  """
+  Runs TargetP on smaller protein files to predict presence and type of
+  targeting peptide.
+  """
   input:
     "annotations/chunks_pep/{index}.pep"
   output:
@@ -863,12 +802,10 @@ targeting peptide.
 
 
 rule kallisto:
-
-"""
-Runs Trinity script to perform transcript expression quantification 
-using Kallisto.
-"""
-
+  """
+  Runs Trinity script to perform transcript expression quantification 
+  using Kallisto.
+  """
   input:
     samples="samples_trimmed.txt",
     transcriptome="transcriptome.fasta",
@@ -907,11 +844,9 @@ using Kallisto.
 
  
 rule download_sprot:
-
-"""
-Downloads and prepares SwissProt database.
-"""
-
+  """
+  Downloads and prepares SwissProt database.
+  """
   output:
     "db/uniprot_sprot.fasta"
   log:
@@ -929,11 +864,9 @@ Downloads and prepares SwissProt database.
 
 
 rule download_pfam:
-
-"""
-Downloads and prepares Pfam database.
-"""
-
+  """
+  Downloads and prepares Pfam database.
+  """
   output:
     "db/Pfam-A.hmm"
   log:
@@ -951,11 +884,9 @@ Downloads and prepares Pfam database.
 
 
 rule download_rfam:
-
-"""
-Downloads and prepares Rfam database.
-"""
-
+  """
+  Downloads and prepares Rfam database.
+  """
   output:
     "db/Rfam.cm"
   log:
@@ -973,12 +904,10 @@ Downloads and prepares Rfam database.
 
 
 rule download_eggnog:
-
-"""
-For future development.
-Downloads eggnog database.
-"""
-
+  """
+  For future development.
+  Downloads eggnog database.
+  """
   output:
     "db/NOG.annotations.tsv"
   log:
@@ -995,12 +924,10 @@ Downloads eggnog database.
 
 
 rule annotated_fasta:
-
-"""
-Puts annotations in the headers of transcripts/proteins in the 
-.fasta/.pep transcriptome files.
-"""
-
+  """
+  Puts annotations in the headers of transcripts/proteins in the 
+  .fasta/.pep transcriptome files.
+  """
   input:
     transcriptome="transcriptome.fasta",
     proteome="transcriptome.pep",
