@@ -15,6 +15,9 @@ assembler: "trinity"
 # may consider canging TRINITY_PARAMS += "  --min_kmer_cov 1 --min_glue 2  --no_normalize_reads"
 trinity_parameters: "--seqType fq"
 
+# assemble using dynamically calculated k-mer sizes (only for rnaspades-based assembly process) instead of the default 21,33,55,77 series
+rnaspades_extended_kmers: "no"
+
 # set the organism (plant or non-plant) for targetp: pl or non-pl
 targetp: "non-pl"
 

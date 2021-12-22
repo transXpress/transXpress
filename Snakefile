@@ -401,21 +401,26 @@ rule rnaspades:
     16
   shell:
     """
-    # get a space delimited listing of all input R1 and R2 FASTQ files to be passed down to 'seqkit stats' for analysis of read lengths
-    myfiles=$(awk '{{print $3,$4}}' test_samples.txt | tr '\\n' ' ') 2>> {log}
-    # echo "myfiles=$myfiles"
-    # obtain tabular output from seqkit describing minimum avg read length as integer
-    max_k=$(seqkit stats -T $myfiles | tail -n +2 | awk 'BEGIN{a="NaN"}{{if ($7<0+a) a=$7}} END{{print a}}' | sed -e 's/\.[0-9]*//') 2>> {log}
-    # echo "max_k=$max_k"
-    one_third=$(expr $max_k / 3) 2>> {log}
-    # echo "one_third=$one_third"
-    # get upper k-mer size ~ 2/3 of the input read length increased a bit
-    two_thirds=$(echo "(2*$one_third)+10" | bc) 2>> {log}
-    # echo "one_third=$one_third two_thirds=$two_thirds"
-    # get the series of k-mer sizes as odd numbers with step-size 10, ensuring we get slightly above the theoretically ideal 2/3 value
-    # k-mer size 29 is the minimum k-mer value supported by rnaspades
-    k_series=$(seq -s, 29 10 $two_thirds | tr '\\n' ' ' | sed 's/ $//') 2>> {log}
-    # echo "max_k=$max_k k_series=$k_series"
+    if [ {config[rnaspades_extended_kmers]} -eq 'yes' ]; then
+        # get a space delimited listing of all input R1 and R2 FASTQ files to be passed down to 'seqkit stats' for analysis of read lengths
+        myfiles=$(awk '{{print $3,$4}}' test_samples.txt | tr '\\n' ' ') 2>> {log}
+        # echo "myfiles=$myfiles"
+        # obtain tabular output from seqkit describing minimum avg read length as integer
+        max_k=$(seqkit stats -T $myfiles | tail -n +2 | awk 'BEGIN{a="NaN"}{{if ($7<0+a) a=$7}} END{{print a}}' | sed -e 's/\.[0-9]*//') 2>> {log}
+        # echo "max_k=$max_k"
+        one_third=$(expr $max_k / 3) 2>> {log}
+        # echo "one_third=$one_third"
+        # get upper k-mer size ~ 2/3 of the input read length increased a bit
+        two_thirds=$(echo "(2*$one_third)+10" | bc) 2>> {log}
+        # echo "one_third=$one_third two_thirds=$two_thirds"
+        # get the series of k-mer sizes as odd numbers with step-size 10, ensuring we get slightly above the theoretically ideal 2/3 value
+        # k-mer size 29 is the minimum k-mer value supported by rnaspades
+        k_series=$(seq -s, 29 10 $two_thirds | tr '\\n' ' ' | sed 's/ $//') 2>> {log}
+        # echo "max_k=$max_k k_series=$k_series"
+    else
+        # follow recommended values for 2x150 reads
+        k_series="21,33,55,77"
+    fi
     rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out --only-assembler -k $k_series &> {log}
     ##Make a fake gene_trans_map file
     seqkit seq -n {output.transcriptome} | while read id ; do echo -e "$id\\t$id" ; done > {output.gene_trans_map} 2>> {log}
