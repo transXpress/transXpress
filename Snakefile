@@ -570,11 +570,10 @@ rule trinity_DE:
     # See https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Differential-Expression#identifying-de-features-no-biological-replicates-proceed-with-caution
     # Learn more about dispersion in edgeR manual http://www.bioconductor.org/packages/release/bioc/manuals/edgeR/man/edgeR.pdf and
     num_replicates_minus_samples=$(expr `awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` - `awk '{{print $1}}' {input.samples} | sort | uniq | wc -l`)
-    if [ $num_replicates_minus_samples -gt 1 ]
-      then
+    if [ $num_replicates_minus_samples -gt 1 ]; then
         # see logs/trinity_DE.log how samples, replicates and contrasts were detected actually
         {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} &> {log}
-      else
+    else
         echo "No biological replicates to run proper differential expression analysis, last-resorting to edgeR with --dispersion {config[dispersion]}" &>> {log}
         {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} --dispersion {config[dispersion]} &> {log}
     fi
