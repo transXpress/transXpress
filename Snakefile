@@ -523,19 +523,22 @@ rule trinity_DE:
 # a more elegant way to do this is:
 # seqkit seq -i {input} | seqkit replace -s -p "\*" -r "" | seqkit split -f -s 1 -O {output}
 # however, there seems to be a problem in seqkit: https://github.com/shenwei356/seqkit/issues/65
-checkpoint fasta_split:
+checkpoint fasta_split_fasta:
   """
-  Splits the transcriptome files (.fasta and .pep) into smaller files so
+  Splits the transcriptome.fasta into smaller files so
   they can be processed (annotated) in parallel.
   """
   input:
-    "transcriptome.{extension}"
+    "transcriptome.fasta"
   output:
-    directory("annotations/chunks_{extension}")
+    directory("annotations/chunks_fasta")
   log:
-    "logs/{extension}_split.log"
+    "logs/fasta_split.log"
   params:
-    memory="2"
+    memory="2",
+    time="4:00:00",
+    qos="backfill",
+    partition="cpu,scpu,bfill"
   threads:
     1
   run:
@@ -548,11 +551,9 @@ checkpoint fasta_split:
           if output_handle is not None:
             output_handle.close()
           fileindex = str(int(count / 1000) + 1);
-          filename = os.path.join(output[0], fileindex + "." + wildcards.extension)
+          filename = os.path.join(output[0], fileindex + ".fasta")
           output_handle = open(filename, "w");
-        # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
-        if wildcards["extension"] == "pep":
-          record.seq = record.seq.strip("*")
+        
         # String the description, because some tools (e.g. deeploc) include it in their output
         record.description = ""
         Bio.SeqIO.write(record, output_handle, "fasta")
@@ -561,12 +562,109 @@ checkpoint fasta_split:
         output_handle.close()
         
 
-def parallel_annotation_tasks(wildcards):
+checkpoint fasta_split_orfs:
+  """
+  Splits the transcriptome.orfs into smaller files so
+  they can be processed (annotated) in parallel.
+  """
+  input:
+    "transcriptome.orfs"
+  output:
+    directory("annotations/chunks_orfs")
+  log:
+    "logs/orfs_split.log"
+  params:
+    memory="2",
+    time="4:00:00",
+    qos="backfill",
+    partition="cpu,scpu,bfill"
+  threads:
+    1
+  run:
+    os.makedirs(output[0], exist_ok=True)
+    with open(input[0], "r") as input_handle:
+      output_handle = None
+      count = 0
+      for record in Bio.SeqIO.parse(input_handle, "fasta"):
+        if (count % 1000 == 0):
+          if output_handle is not None:
+            output_handle.close()
+          fileindex = str(int(count / 1000) + 1);
+          filename = os.path.join(output[0], fileindex + ".orfs")
+          output_handle = open(filename, "w");
+        
+        # String the description, because some tools (e.g. deeploc) include it in their output
+        record.description = ""
+        Bio.SeqIO.write(record, output_handle, "fasta")
+        count += 1
+      if output_handle is not None:
+        output_handle.close()
+        
+checkpoint fasta_split_pep:
+  """
+  Splits the transcriptome.pep into smaller files so
+  they can be processed (annotated) in parallel.
+  """
+  input:
+    "transcriptome.pep"
+  output:
+    directory("annotations/chunks_pep")
+  log:
+    "logs/pep_split.log"
+  params:
+    memory="2",
+    time="4:00:00",
+    qos="backfill",
+    partition="cpu,scpu,bfill"
+  threads:
+    1
+  run:
+    os.makedirs(output[0], exist_ok=True)
+    with open(input[0], "r") as input_handle:
+      output_handle = None
+      count = 0
+      for record in Bio.SeqIO.parse(input_handle, "fasta"):
+        if (count % 1000 == 0):
+          if output_handle is not None:
+            output_handle.close()
+          fileindex = str(int(count / 1000) + 1);
+          filename = os.path.join(output[0], fileindex + ".pep")
+          output_handle = open(filename, "w");
+        # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
+        #if wildcards["extension"] == "pep":
+        record.seq = record.seq.strip("*")
+        # String the description, because some tools (e.g. deeploc) include it in their output
+        record.description = ""
+        Bio.SeqIO.write(record, output_handle, "fasta")
+        count += 1
+      if output_handle is not None:
+        output_handle.close()
+        
+
+def parallel_annotation_tasks_fasta(wildcards):
   """
   Returns filenames of files which were annotated in parallel.
   """
-  parallel_dir = checkpoints.fasta_split.get(**wildcards).output[0]
-  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}." + wildcards["extension"])).index
+  parallel_dir = checkpoints.fasta_split_fasta.get(**wildcards).output[0]
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}.fasta" )).index
+  completed_files = expand("annotations/{task}/{index}.out",index=job_ids, task=wildcards["task"])
+  return completed_files
+
+def parallel_annotation_tasks_orfs(wildcards):
+  """
+  Returns filenames of files which were annotated in parallel.
+  """
+  parallel_dir = checkpoints.fasta_split_orfs.get(**wildcards).output[0]
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}.orfs")).index
+  completed_files = expand("annotations/{task}/{index}.out",index=job_ids, task=wildcards["task"])
+  return completed_files
+
+def parallel_annotation_tasks_pep(wildcards):
+  """
+  Returns filenames of files which were annotated in parallel.
+  """
+  parallel_dir = checkpoints.fasta_split_pep.get(**wildcards).output[0]
+  job_ids = glob_wildcards(os.path.join(parallel_dir, "{index}.pep")).index
   completed_files = expand("annotations/{task}/{index}.out",index=job_ids, task=wildcards["task"])
   return completed_files
 
@@ -576,13 +674,61 @@ rule annotation_merge_fasta:
   Merges files that were annotated in parallel into a single file.
   """
   input:
-    parallel_annotation_tasks
+    parallel_annotation_tasks_fasta
   output:
-    "annotations/{task}_{extension}.out"
+    "annotations/{task}_fasta.out"
   log:
-    "logs/{task}_{extension}_merge.log"
+    "logs/{task}_fasta_merge.log"
   params:
-    memory="2"
+    memory="2",
+    time="4:00:00",
+    qos="backfill",
+    partition="cpu,scpu,bfill"
+  threads:
+    1
+  shell:
+    """
+    cat {input} > {output} 2> {log}
+    """
+
+rule annotation_merge_orfs:
+  """
+  Merges files that were annotated in parallel into a single file.
+  """
+  input:
+    parallel_annotation_tasks_orfs
+  output:
+    "annotations/{task}_orfs.out"
+  log:
+    "logs/{task}_orfs_merge.log"
+  params:
+    memory="2",
+    time="4:00:00",
+    qos="backfill",
+    partition="cpu,scpu,bfill"
+  threads:
+    1
+  shell:
+    """
+    cat {input} > {output} 2> {log}
+    """
+
+
+rule annotation_merge_pep:
+  """
+  Merges files that were annotated in parallel into a single file.
+  """
+  input:
+    parallel_annotation_tasks_pep
+  output:
+    "annotations/{task}_pep.out"
+  log:
+    "logs/{task}_pep_merge.log"
+  params:
+    memory="2",
+    time="4:00:00",
+    qos="backfill",
+    partition="cpu,scpu,bfill"
   threads:
     1
   shell:
