@@ -535,10 +535,7 @@ checkpoint fasta_split_fasta:
   log:
     "logs/fasta_split.log"
   params:
-    memory="2",
-    time="4:00:00",
-    qos="backfill",
-    partition="cpu,scpu,bfill"
+    memory="2"
   threads:
     1
   run:
@@ -574,10 +571,7 @@ checkpoint fasta_split_orfs:
   log:
     "logs/orfs_split.log"
   params:
-    memory="2",
-    time="4:00:00",
-    qos="backfill",
-    partition="cpu,scpu,bfill"
+    memory="2"
   threads:
     1
   run:
@@ -612,10 +606,7 @@ checkpoint fasta_split_pep:
   log:
     "logs/pep_split.log"
   params:
-    memory="2",
-    time="4:00:00",
-    qos="backfill",
-    partition="cpu,scpu,bfill"
+    memory="2"
   threads:
     1
   run:
@@ -680,10 +671,7 @@ rule annotation_merge_fasta:
   log:
     "logs/{task}_fasta_merge.log"
   params:
-    memory="2",
-    time="4:00:00",
-    qos="backfill",
-    partition="cpu,scpu,bfill"
+    memory="2"
   threads:
     1
   shell:
@@ -702,10 +690,7 @@ rule annotation_merge_orfs:
   log:
     "logs/{task}_orfs_merge.log"
   params:
-    memory="2",
-    time="4:00:00",
-    qos="backfill",
-    partition="cpu,scpu,bfill"
+    memory="2"
   threads:
     1
   shell:
@@ -725,10 +710,7 @@ rule annotation_merge_pep:
   log:
     "logs/{task}_pep_merge.log"
   params:
-    memory="2",
-    time="4:00:00",
-    qos="backfill",
-    partition="cpu,scpu,bfill"
+    memory="2"
   threads:
     1
   shell:
