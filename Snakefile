@@ -56,16 +56,16 @@ rule clean:
     """
 
 
-rule fastqc:
+rule fastqc_before_trim:
   """
   Runs fastQC on individual input reads files.
   """
   input:
     samples=config["samples_file"]
   output:
-    directory("fastqc")
+    directory("fastqc_before_trim")
   log:
-    "logs/fastqc.log"
+    "logs/fastqc_before_trim.log"
   params:
     memory="4"
   threads:
@@ -81,16 +81,16 @@ rule fastqc:
     """
 
 
-rule multiqc:
+rule multiqc_before_trim:
   """
   Creates multiQC report from individual fastQC reports.
   """
   input:
-    "fastqc"
+    "fastqc_before_trim"
   output:
-    directory("multiqc")
+    directory("multiqc_before_trim")
   log:
-    "logs/multiqc.log"
+    "logs/multiqc_before_trim.log"
   params:
     memory="4"
   threads:
@@ -178,6 +178,233 @@ rule trimmomatic_merge:
     cat {input} > {output.samples_trimmed} 2> {log}
     """
 
+rule fastqc_after_trim:
+  """
+  Runs fastQC on individual trimmed reads files.
+  """
+  input:
+    samples="samples_trimmed.txt"
+  output:
+    directory("fastqc_after_trim")
+  log:
+    "logs/fastqc_after_trim.log"
+  params:
+    memory="4"
+  threads:
+    1
+  shell:
+    """
+    # run fastqc on input files
+    # making directory for the fastqc summary files
+    mkdir {output} &> {log}
+    FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input}) &>> {log}
+    # running fasqc on the files
+    for file in $FILES; do fastqc -f fastq -o {output} $file; done &>> {log}
+    """
+
+
+rule multiqc_after_trim:
+  """
+  Creates multiQC report from individual fastQC reports after the trimming.
+  """
+  input:
+    "fastqc_after_trim"
+  output:
+    directory("multiqc_after_trim")
+  log:
+    "logs/multiqc_after_trim.log"
+  params:
+    memory="4"
+  threads:
+    1
+  shell:
+    """
+    mkdir {output} &> {log}
+    multiqc -o {output} {input} &>> {log}
+    """
+
+rule compare_qc_after_trim:
+"""
+Compares the quality of reads before and after trimming.
+"""
+input:
+  before="multiqc_before_trim/multiqc_data/multiqc_fastqc.txt",
+  after="multiqc_after_trim/multiqc_data/multiqc_fastqc.txt"
+output:
+  result="qc_comparison.txt"
+log:
+  "logs/compare_qc_after_trim.log"
+run:
+  with open(input["before"], "r") as before, open(input["after"], "r") as after, open(output["result"], "w") as out:
+    before_data = before.readlines()[1:] # skip header
+    after_data = after.readlines()[1:] # skip header
+
+    basic_statistics_list = []
+    per_base_sequence_quality_list = []
+    per_tile_sequence_quality_list = []
+    per_sequence_quality_scores_list = []
+    per_base_sequence_content_list = []
+    per_sequence_gc_content_list = []
+    per_base_n_content_list = []
+    sequence_length_distribution_list = []
+    sequence_duplication_levels_list = []
+    overrepresented_sequences_list = []
+    adapter_content_list = []
+
+    for line in before_data:
+      basic_statistics, per_base_sequence_quality, per_tile_sequence_quality, per_sequence_quality_scores, per_base_sequence_content, per_sequence_gc_content, per_base_n_content, sequence_length_distribution, sequence_duplication_levels, overrepresented_sequences, adapter_content = line.split("\t")[10:]
+      basic_statistics_list.append(basic_statistics)
+      per_base_sequence_quality_list.append(per_base_sequence_quality)
+      per_tile_sequence_quality_list.append(per_tile_sequence_quality)
+      per_sequence_quality_scores_list.append(per_sequence_quality_scores)
+      per_base_sequence_content_list.append(per_base_sequence_content)
+      per_sequence_gc_content_list.append(per_sequence_gc_content)
+      per_base_n_content_list.append(per_base_n_content)
+      sequence_length_distribution_list.append(sequence_length_distribution)
+      sequence_duplication_levels_list.append(sequence_duplication_levels)
+      overrepresented_sequences_list.append(overrepresented_sequences)
+      adapter_content_list.append(adapter_content)
+    
+    basic_statistics_list_after = []
+    per_base_sequence_quality_list_after = []
+    per_tile_sequence_quality_list_after = []
+    per_sequence_quality_scores_list_after = []
+    per_base_sequence_content_list_after = []
+    per_sequence_gc_content_list_after = []
+    per_base_n_content_list_after = []
+    sequence_length_distribution_list_after = []
+    sequence_duplication_levels_list_after = []
+    overrepresented_sequences_list_after = []
+    adapter_content_list_after = []
+  
+  for line in after_data:
+    basic_statistics_after, per_base_sequence_quality_after, per_tile_sequence_quality_after, per_sequence_quality_scores_after, per_base_sequence_content_after, per_sequence_gc_content_after, per_base_n_content_after, sequence_length_distribution_after, sequence_duplication_levels_after, overrepresented_sequences_after, adapter_content_after = line.split("\t")[10:]
+    basic_statistics_list_after.append(basic_statistics_after)
+    per_base_sequence_quality_list_after.append(per_base_sequence_quality_after)
+    per_tile_sequence_quality_list_after.append(per_tile_sequence_quality_after)
+    per_sequence_quality_scores_list_after.append(per_sequence_quality_scores_after)
+    per_base_sequence_content_list_after.append(per_base_sequence_content_after)
+    per_sequence_gc_content_list_after.append(per_sequence_gc_content_after)
+    per_base_n_content_list_after.append(per_base_n_content_after)
+    sequence_length_distribution_list_after.append(sequence_length_distribution_after)
+    sequence_duplication_levels_list_after.append(sequence_duplication_levels_after)
+    overrepresented_sequences_list_after.append(overrepresented_sequences_after)
+    adapter_content_list_after.append(adapter_content_after)
+  
+  out.write("FastQC comparison before and after trimming\n")
+  out.write("BASIC STATISTICS\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(basic_statistics_list.count('pass')) + '\n')
+  out.write("warn: " + str(basic_statistics_list.count('warn')) + '\n')
+  out.write("fail: " + str(basic_statistics_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(basic_statistics_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(basic_statistics_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(basic_statistics_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("PER BASE SEQUENCE QUALITY\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(per_base_sequence_quality_list.count('pass')) + '\n')
+  out.write("warn: " + str(per_base_sequence_quality_list.count('warn')) + '\n')
+  out.write("fail: " + str(per_base_sequence_quality_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(per_base_sequence_quality_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(per_base_sequence_quality_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(per_base_sequence_quality_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("PER TILE SEQUENCE QUALITY\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(per_tile_sequence_quality_list.count('pass')) + '\n')
+  out.write("warn: " + str(per_tile_sequence_quality_list.count('warn')) + '\n')
+  out.write("fail: " + str(per_tile_sequence_quality_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(per_tile_sequence_quality_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(per_tile_sequence_quality_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(per_tile_sequence_quality_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("PER SEQUENCE QUALITY SCORES\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(per_sequence_quality_scores_list.count('pass')) + '\n')
+  out.write("warn: " + str(per_sequence_quality_scores_list.count('warn')) + '\n')
+  out.write("fail: " + str(per_sequence_quality_scores_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(per_sequence_quality_scores_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(per_sequence_quality_scores_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(per_sequence_quality_scores_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("PER BASE SEQUENCE CONTENT\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(per_base_sequence_content_list.count('pass')) + '\n')
+  out.write("warn: " + str(per_base_sequence_content_list.count('warn')) + '\n')
+  out.write("fail: " + str(per_base_sequence_content_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(per_base_sequence_content_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(per_base_sequence_content_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(per_base_sequence_content_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("PER SEQUENCE GC CONTENT\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(per_sequence_gc_content_list.count('pass')) + '\n')
+  out.write("warn: " + str(per_sequence_gc_content_list.count('warn')) + '\n')
+  out.write("fail: " + str(per_sequence_gc_content_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(per_sequence_gc_content_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(per_sequence_gc_content_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(per_sequence_gc_content_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("PER BASE N CONTENT\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(per_base_n_content_list.count('pass')) + '\n')
+  out.write("warn: " + str(per_base_n_content_list.count('warn')) + '\n')
+  out.write("fail: " + str(per_base_n_content_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(per_base_n_content_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(per_base_n_content_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(per_base_n_content_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("SEQUENCE LENGTH DISTRIBUTION\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(sequence_length_distribution_list.count('pass')) + '\n')
+  out.write("warn: " + str(sequence_length_distribution_list.count('warn')) + '\n')
+  out.write("fail: " + str(sequence_length_distribution_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(sequence_length_distribution_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(sequence_length_distribution_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(sequence_length_distribution_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("SEQUENCE DUPLICATION LEVELS\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(sequence_duplication_levels_list.count('pass')) + '\n')
+  out.write("warn: " + str(sequence_duplication_levels_list.count('warn')) + '\n')
+  out.write("fail: " + str(sequence_duplication_levels_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(sequence_duplication_levels_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(sequence_duplication_levels_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(sequence_duplication_levels_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("OVERREPRESENTED SEQUENCES\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(overrepresented_sequences_list.count('pass')) + '\n')
+  out.write("warn: " + str(overrepresented_sequences_list.count('warn')) + '\n')
+  out.write("fail: " + str(overrepresented_sequences_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(overrepresented_sequences_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(overrepresented_sequences_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(overrepresented_sequences_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+  out.write("ADAPTER CONTENT\n")
+  out.write("Before trimming:\n")
+  out.write("pass: " + str(adapter_content_list.count('pass')) + '\n')
+  out.write("warn: " + str(adapter_content_list.count('warn')) + '\n')
+  out.write("fail: " + str(adapter_content_list.count('fail')) + '\n')
+  out.write("After trimming:\n")
+  out.write("pass: " + str(adapter_content_list_after.count('pass')) + '\n')
+  out.write("warn: " + str(adapter_content_list_after.count('warn')) + '\n')
+  out.write("fail: " + str(adapter_content_list_after.count('fail')) + '\n')
+  out.write('-' * 50 + '\n')
+
+
+    
 
 rule samples_yaml_conversion:
   """
