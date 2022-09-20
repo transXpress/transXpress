@@ -454,89 +454,66 @@ rule compare_qc_after_trim:
   log:
     "logs/compare_qc_after_trim.log"
   run:
- 
-    with open(input["before"], "r") as before, open(input["after"], "r") as after, open(output["result"], "w") as out_file:
-      before_data = [line.strip() for line in before.readlines()[1:]] # skip header
-      after_data = [line.strip() for line in after.readlines()[1:]] # skip header
 
-      per_base_sequence_quality_list = []
-      per_sequence_quality_scores_list = []
-      overrepresented_sequences_list = []
-      adapter_content_list = []
+    # map name of the module to corresponding variable prefix
+    mapping = {
+      "PER BASE SEQUENCE QUALITY": "per_base_sequence_quality",
+      "PER SEQUENCE QUALITY SCORES": "per_sequence_quality_scores",
+      "OVERREPRESENTED SEQUENCES": "overrepresented_sequences",
+      "ADAPTER CONTENT": "adapter_content"
+    }
 
-      for line in before_data:
-        basic_statistics, per_base_sequence_quality, per_tile_sequence_quality, per_sequence_quality_scores, per_base_sequence_content, per_sequence_gc_content, per_base_n_content, sequence_length_distribution, sequence_duplication_levels, overrepresented_sequences, adapter_content = line.split("\t")[10:]
-        per_base_sequence_quality_list.append(per_base_sequence_quality)
-        per_sequence_quality_scores_list.append(per_sequence_quality_scores)
-        overrepresented_sequences_list.append(overrepresented_sequences)
-        adapter_content_list.append(adapter_content)
+    # compares pass, warn, fail counts before and after trimming for a given module and writes the result to the output file
+    def compare_module(module_name, before_trim, after_trim, out_file):
+      out_file.write(f'**{module_name}**\n')
+      out_file.write('Before trimming:\n')
+      out_file.write(f"pass: {str(before_trim.count('pass'))} out of {str(len(before_trim))} ({str(before_trim.count('pass')/len(before_trim)*100)}%)\n")
+      out_file.write(f"warn: {str(before_trim.count('warn'))} out of {str(len(before_trim))} ({str(before_trim.count('warn')/len(before_trim)*100)}%)\n")
+      out_file.write(f"fail: {str(before_trim.count('fail'))} out of {str(len(before_trim))} ({str(before_trim.count('fail')/len(before_trim)*100)}%)\n")
+      out_file.write('\n')
+
+      out_file.write('After trimming:\n')
+      out_file.write(f"pass: {str(after_trim.count('pass'))} out of {str(len(after_trim))} ({str(after_trim.count('pass')/len(after_trim)*100)}%)\n")
+      out_file.write(f"warn: {str(after_trim.count('warn'))} out of {str(len(after_trim))} ({str(after_trim.count('warn')/len(after_trim)*100)}%)\n")
+      out_file.write(f"fail: {str(after_trim.count('fail'))} out of {str(len(after_trim))} ({str(after_trim.count('fail')/len(after_trim)*100)}%)\n")
+      out_file.write('-' * 50 + '\n')
     
-      per_base_sequence_quality_list_after = []
-      per_sequence_quality_scores_list_after = []
-      overrepresented_sequences_list_after = []
-      adapter_content_list_after = []
-  
-      for line in after_data:
-        basic_statistics_after, per_base_sequence_quality_after, per_tile_sequence_quality_after, per_sequence_quality_scores_after, per_base_sequence_content_after, per_sequence_gc_content_after, per_base_n_content_after, sequence_length_distribution_after, sequence_duplication_levels_after, overrepresented_sequences_after, adapter_content_after = line.split("\t")[10:]
-        per_base_sequence_quality_list_after.append(per_base_sequence_quality_after)
-        per_sequence_quality_scores_list_after.append(per_sequence_quality_scores_after)
-        overrepresented_sequences_list_after.append(overrepresented_sequences_after)
-        adapter_content_list_after.append(adapter_content_after)
+    # reads the file with fastqc results and returns a list of pass, warn, fail values of the input files for relevant modules
+    def load_data(file_name):
+      with open(file_name, 'r') as in_handle:
+        data = [line.strip() for line in in_handle.readlines()[1:]] # skip header
+
+        per_base_sequence_quality_list = []
+        per_sequence_quality_scores_list = []
+        overrepresented_sequences_list = []
+        adapter_content_list = []
+
+        for line in data:
+          basic_statistics, per_base_sequence_quality, per_tile_sequence_quality, per_sequence_quality_scores, per_base_sequence_content, per_sequence_gc_content, per_base_n_content, sequence_length_distribution, sequence_duplication_levels, overrepresented_sequences, adapter_content = line.split("\t")[10:]
+          per_base_sequence_quality_list.append(per_base_sequence_quality)
+          per_sequence_quality_scores_list.append(per_sequence_quality_scores)
+          overrepresented_sequences_list.append(overrepresented_sequences)
+          adapter_content_list.append(adapter_content)
+
+      return per_base_sequence_quality_list, per_sequence_quality_scores_list, overrepresented_sequences_list, adapter_content_list
+
+    # get lists of pass/warn/fail values of relevant modules before trimming
+    per_base_sequence_quality_list, per_sequence_quality_scores_list, overrepresented_sequences_list, adapter_content_list = load_data(input["before"])
+
+    # get lists of pass/warn/fail values of relevant modules after trimming
+    per_base_sequence_quality_list_after, per_sequence_quality_scores_list_after, overrepresented_sequences_list_after, adapter_content_list_after = load_data(input["after"])
+
+    # compare the results and write to the output file
+    with open(output["result"], "w") as out_file:
         
       out_file.write("FASTQC COMPARISON BEFORE AND AFTER TRIMMING\n")
       out_file.write('-' * 50 + '\n')
 
-      out_file.write("**PER BASE SEQUENCE QUALITY**\n")
-      out_file.write("Before trimming:\n")
-      out_file.write(f"pass: {str(per_base_sequence_quality_list.count('pass'))} out of {str(len(per_base_sequence_quality_list))} ({str(per_base_sequence_quality_list.count('pass')/len(per_base_sequence_quality_list)*100)}%)\n")
-      out_file.write(f"warn: {str(per_base_sequence_quality_list.count('warn'))} out of {str(len(per_base_sequence_quality_list))} ({str(per_base_sequence_quality_list.count('warn')/len(per_base_sequence_quality_list)*100)}%)\n")
-      out_file.write(f"fail: {str(per_base_sequence_quality_list.count('fail'))} out of {str(len(per_base_sequence_quality_list))} ({str(per_base_sequence_quality_list.count('fail')/len(per_base_sequence_quality_list)*100)}%)\n")
-      out_file.write('\n')
+      modules = ["PER BASE SEQUENCE QUALITY", "PER SEQUENCE QUALITY SCORES", "OVERREPRESENTED SEQUENCES", "ADAPTER CONTENT"]
+      for module in modules:
+        compare_module(module, eval(mapping[module] + "_list"), eval(mapping[module] + "_list_after"), out_file)
 
-      out_file.write("After trimming:\n")
-      out_file.write(f"pass: {str(per_base_sequence_quality_list_after.count('pass'))} out of {str(len(per_base_sequence_quality_list_after))} ({str(per_base_sequence_quality_list_after.count('pass')/len(per_base_sequence_quality_list_after)*100)}%)\n")
-      out_file.write(f"warn: {str(per_base_sequence_quality_list_after.count('warn'))} out of {str(len(per_base_sequence_quality_list_after))} ({str(per_base_sequence_quality_list_after.count('warn')/len(per_base_sequence_quality_list_after)*100)}%)\n")
-      out_file.write(f"fail: {str(per_base_sequence_quality_list_after.count('fail'))} out of {str(len(per_base_sequence_quality_list_after))} ({str(per_base_sequence_quality_list_after.count('fail')/len(per_base_sequence_quality_list_after)*100)}%)\n")
-      out_file.write('-' * 50 + '\n')
-
-      out_file.write("**PER SEQUENCE QUALITY SCORES**\n")
-      out_file.write("Before trimming:\n")
-      out_file.write(f"pass: {str(per_sequence_quality_scores_list.count('pass'))} out of {str(len(per_sequence_quality_scores_list))} ({str(per_sequence_quality_scores_list.count('pass')/len(per_sequence_quality_scores_list)*100)}%)\n")
-      out_file.write(f"warn: {str(per_sequence_quality_scores_list.count('warn'))} out of {str(len(per_sequence_quality_scores_list))} ({str(per_sequence_quality_scores_list.count('warn')/len(per_sequence_quality_scores_list)*100)}%)\n")
-      out_file.write(f"fail: {str(per_sequence_quality_scores_list.count('fail'))} out of {str(len(per_sequence_quality_scores_list))} ({str(per_sequence_quality_scores_list.count('fail')/len(per_sequence_quality_scores_list)*100)}%)\n")
-      out_file.write('\n')
-
-      out_file.write("After trimming:\n")
-      out_file.write(f"pass: {str(per_sequence_quality_scores_list_after.count('pass'))} out of {str(len(per_sequence_quality_scores_list_after))} ({str(per_sequence_quality_scores_list_after.count('pass')/len(per_sequence_quality_scores_list_after)*100)}%)\n")
-      out_file.write(f"warn: {str(per_sequence_quality_scores_list_after.count('warn'))} out of {str(len(per_sequence_quality_scores_list_after))} ({str(per_sequence_quality_scores_list_after.count('warn')/len(per_sequence_quality_scores_list_after)*100)}%)\n")
-      out_file.write(f"fail: {str(per_sequence_quality_scores_list_after.count('fail'))} out of {str(len(per_sequence_quality_scores_list_after))} ({str(per_sequence_quality_scores_list_after.count('fail')/len(per_sequence_quality_scores_list_after)*100)}%)\n")
-      out_file.write('-' * 50 + '\n')
-
-      out_file.write("**OVERREPRESENTED SEQUENCES**\n")
-      out_file.write("Before trimming:\n")
-      out_file.write(f"pass: {str(overrepresented_sequences_list.count('pass'))} out of {str(len(overrepresented_sequences_list))} ({str(overrepresented_sequences_list.count('pass')/len(overrepresented_sequences_list)*100)}%)\n")
-      out_file.write(f"warn: {str(overrepresented_sequences_list.count('warn'))} out of {str(len(overrepresented_sequences_list))} ({str(overrepresented_sequences_list.count('warn')/len(overrepresented_sequences_list)*100)}%)\n")
-      out_file.write(f"fail: {str(overrepresented_sequences_list.count('fail'))} out of {str(len(overrepresented_sequences_list))} ({str(overrepresented_sequences_list.count('fail')/len(overrepresented_sequences_list)*100)}%)\n")
-      out_file.write('\n')
-
-      out_file.write("After trimming:\n")
-      out_file.write(f"pass: {str(overrepresented_sequences_list_after.count('pass'))} out of {str(len(overrepresented_sequences_list_after))} ({str(overrepresented_sequences_list_after.count('pass')/len(overrepresented_sequences_list_after)*100)}%)\n")
-      out_file.write(f"warn: {str(overrepresented_sequences_list_after.count('warn'))} out of {str(len(overrepresented_sequences_list_after))} ({str(overrepresented_sequences_list_after.count('warn')/len(overrepresented_sequences_list_after)*100)}%)\n")
-      out_file.write(f"fail: {str(overrepresented_sequences_list_after.count('fail'))} out of {str(len(overrepresented_sequences_list_after))} ({str(overrepresented_sequences_list_after.count('fail')/len(overrepresented_sequences_list_after)*100)}%)\n")
-      out_file.write('-' * 50 + '\n')
-
-      out_file.write("**ADAPTER CONTENT**\n")
-      out_file.write("Before trimming:\n")
-      out_file.write(f"pass: {str(adapter_content_list.count('pass'))} out of {str(len(adapter_content_list))} ({str(adapter_content_list.count('pass')/len(adapter_content_list)*100)}%)\n")
-      out_file.write(f"warn: {str(adapter_content_list.count('warn'))} out of {str(len(adapter_content_list))} ({str(adapter_content_list.count('warn')/len(adapter_content_list)*100)}%)\n")
-      out_file.write(f"fail: {str(adapter_content_list.count('fail'))} out of {str(len(adapter_content_list))} ({str(adapter_content_list.count('fail')/len(adapter_content_list)*100)}%)\n")
-      out_file.write('\n')
-
-      out_file.write("After trimming:\n")
-      out_file.write(f"pass: {str(adapter_content_list_after.count('pass'))} out of {str(len(adapter_content_list_after))} ({str(adapter_content_list_after.count('pass')/len(adapter_content_list_after)*100)}%)\n")
-      out_file.write(f"warn: {str(adapter_content_list_after.count('warn'))} out of {str(len(adapter_content_list_after))} ({str(adapter_content_list_after.count('warn')/len(adapter_content_list_after)*100)}%)\n")
-      out_file.write(f"fail: {str(adapter_content_list_after.count('fail'))} out of {str(len(adapter_content_list_after))} ({str(adapter_content_list_after.count('fail')/len(adapter_content_list_after)*100)}%)\n")
-      out_file.write('-' * 50 + '\n')
+    # print the results also in the terminal
     with open(output["result"], "r") as out_file:
       for line in out_file.readlines():
         print(line.strip())
