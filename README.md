@@ -28,6 +28,7 @@ transXpress requires:
 * sra-tools (install via conda)
 * tidyverse (required for Trinity, install via conda)
 * python 3.6, numpy 1.16, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
+* busco 4+ (install via conda)
 * [deeploc](https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0)
 * [targetp 2.0](http://www.cbs.dtu.dk/services/TargetP/)
 * tmhmm.py (install via pip)
@@ -53,10 +54,12 @@ conda activate transxpress
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority false
-conda install "snakemake>=5" fastqc multiqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget sra-tools
+conda install "snakemake>=5.4.2" fastqc multiqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget sra-tools
 conda install r bioconductor-edger r-tidyverse
-conda install "trinity>=2.13.2" trimmomatic bowtie2 "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
+conda install "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
+conda instal "trinity>=2.13.2" trimmomatic bowtie2 "busco>=4"
 ~~~~
+
 5. Install deeploc:
       * Download deeploc from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
       * Unpack and install deeploc:

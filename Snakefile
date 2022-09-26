@@ -39,7 +39,8 @@ rule all:
     "transcriptome_TPM_blast.csv",
     "fastqc",
     "multiqc",
-    "edgeR_trans"
+    "edgeR_trans",
+    "busco"
 
 
 rule clean:
@@ -414,6 +415,30 @@ rule trinity_stats:
     {TRINITY_HOME}/util/misc/plot_ExN50_statistic.Rscript {output.exN50} &>> {log}
     """
 
+rule busco:
+  """
+  Runs BUSCO to assess the completeness of the transcriptome.
+  """
+  input:
+    transcriptome="transcriptome.fasta"
+  output:
+    directory("busco")
+  log:
+    "logs/busco.log"
+  params:
+    memory="2"
+  threads:
+    4
+  shell:
+    """
+    lineage={config[lineage]} &> {log}
+    if [ -z "$lineage"] &>> {log}
+    then &>> {log}
+      busco -m transcriptome -i {input.transcriptome} -o {output} --auto-lineage -c {threads} &>> {log}
+    else &>> {log}
+      busco -m transcriptome -i {input.transcriptome} -o {output} -l $lineage -c {threads} &>> {log}
+    fi &>> {log}
+    """
 
 rule transdecoder_longorfs:
   """
