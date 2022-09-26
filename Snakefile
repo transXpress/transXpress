@@ -40,7 +40,8 @@ rule all:
     "fastqc",
     "multiqc",
     "edgeR_trans",
-    "busco"
+    "busco",
+    "busco_report.txt"
 
 
 rule clean:
@@ -422,7 +423,8 @@ rule busco:
   input:
     transcriptome="transcriptome.fasta"
   output:
-    directory("busco")
+    out_directory=directory("busco"),
+    report="busco_report.txt"
   log:
     "logs/busco.log"
   params:
@@ -434,10 +436,12 @@ rule busco:
     lineage={config[lineage]} &> {log}
     if [ -z "$lineage"] &>> {log}
     then &>> {log}
-      busco -m transcriptome -i {input.transcriptome} -o {output} --auto-lineage -c {threads} &>> {log}
+      busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} --auto-lineage -c {threads} &>> {log}
     else &>> {log}
-      busco -m transcriptome -i {input.transcriptome} -o {output} -l $lineage -c {threads} &>> {log}
+      busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} -l $lineage -c {threads} &>> {log}
     fi &>> {log}
+
+    cp $(ls busco/short_summary*.txt) {output.report} &>> {log}
     """
 
 rule transdecoder_longorfs:
