@@ -489,18 +489,18 @@ rule compare_qc_after_trim:
 
     # compares pass, warn, fail counts before and after trimming for a given module and writes the result to the output file
     def compare_module(module_name, before_trim, after_trim, out_file):
-      out_file.write(f'**{module_name}**\n')
-      out_file.write('Before trimming:\n')
-      out_file.write(f"pass: {str(before_trim.count('pass'))} out of {str(len(before_trim))} ({str(before_trim.count('pass')/len(before_trim)*100)}%)\n")
-      out_file.write(f"warn: {str(before_trim.count('warn'))} out of {str(len(before_trim))} ({str(before_trim.count('warn')/len(before_trim)*100)}%)\n")
-      out_file.write(f"fail: {str(before_trim.count('fail'))} out of {str(len(before_trim))} ({str(before_trim.count('fail')/len(before_trim)*100)}%)\n")
-      out_file.write('\n')
-
-      out_file.write('After trimming:\n')
-      out_file.write(f"pass: {str(after_trim.count('pass'))} out of {str(len(after_trim))} ({str(after_trim.count('pass')/len(after_trim)*100)}%)\n")
-      out_file.write(f"warn: {str(after_trim.count('warn'))} out of {str(len(after_trim))} ({str(after_trim.count('warn')/len(after_trim)*100)}%)\n")
-      out_file.write(f"fail: {str(after_trim.count('fail'))} out of {str(len(after_trim))} ({str(after_trim.count('fail')/len(after_trim)*100)}%)\n")
-      out_file.write('-' * 50 + '\n')
+      out_file.writelines(f"""**{module_name}**
+      Before trimming:
+      pass: {str(before_trim.count('pass'))} out of {str(len(before_trim))} ({str(before_trim.count('pass')/len(before_trim)*100)}%)
+      warn: {str(before_trim.count('warn'))} out of {str(len(before_trim))} ({str(before_trim.count('warn')/len(before_trim)*100)}%)
+      fail: {str(before_trim.count('fail'))} out of {str(len(before_trim))} ({str(before_trim.count('fail')/len(before_trim)*100)}%)
+      
+      After trimming:
+      pass: {str(after_trim.count('pass'))} out of {str(len(after_trim))} ({str(after_trim.count('pass')/len(after_trim)*100)}%)
+      warn: {str(after_trim.count('warn'))} out of {str(len(after_trim))} ({str(after_trim.count('warn')/len(after_trim)*100)}%)
+      fail: {str(after_trim.count('fail'))} out of {str(len(after_trim))} ({str(after_trim.count('fail')/len(after_trim)*100)}%)
+      {'-' * 50}
+      """)
     
     # reads the file with fastqc results and returns a list of pass, warn, fail values of the input files for relevant modules
     def load_data(file_name):
