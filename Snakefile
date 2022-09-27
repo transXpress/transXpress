@@ -811,7 +811,16 @@ rule busco:
       busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} -l $lineage -c {threads} &>> {log}
     fi &>> {log}
 
-    cp $(ls busco/short_summary*.txt) {output.report} &>> {log}
+    status=$?
+
+    if [ $status -eq 0 ]
+    then
+      echo "BUSCO run completed successfully" &>> {log}
+      cp busco/short_summary*.txt {output.report} &>> {log}
+    else
+      echo "BUSCO run failed" &>> {log}
+      exit 1 &>> {log}
+    fi
     """
 
 rule transdecoder_longorfs:
