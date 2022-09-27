@@ -38,6 +38,8 @@ rule all:
     "transcriptome_annotated.fasta",
     "transcriptome_annotated.pep",
     "transcriptome_TPM_blast.csv",
+    "busco",
+    "busco_report.txt"
     "fastqc_before_trim",
     "multiqc_before_trim",
     "fastqc_after_trim",
@@ -784,6 +786,42 @@ rule trinity_stats:
     {TRINITY_HOME}/util/misc/plot_ExN50_statistic.Rscript {output.exN50} &>> {log}
     """
 
+rule busco:
+  """
+  Runs BUSCO to assess the completeness of the transcriptome.
+  """
+  input:
+    transcriptome="transcriptome.fasta"
+  output:
+    out_directory=directory("busco"),
+    report="busco_report.txt"
+  log:
+    "logs/busco.log"
+  params:
+    memory="2"
+  threads:
+    4
+  shell:
+    """
+    lineage={config[lineage]} &> {log}
+    if [ -z "$lineage"] &>> {log}
+    then &>> {log}
+      busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} --auto-lineage -c {threads} &>> {log}
+    else &>> {log}
+      busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} -l $lineage -c {threads} &>> {log}
+    fi &>> {log}
+
+    status=$?
+
+    if [ $status -eq 0 ]
+    then
+      echo "BUSCO run completed successfully" &>> {log}
+      cp busco/short_summary*.txt {output.report} &>> {log}
+    else
+      echo "BUSCO run failed" &>> {log}
+      exit 1 &>> {log}
+    fi
+    """
 
 rule transdecoder_longorfs:
   """

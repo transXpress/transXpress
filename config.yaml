@@ -35,3 +35,12 @@ e_value_threshold: "1e-6"
 # https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Differential-Expression#identifying-de-features-no-biological-replicates-proceed-with-caution
 # See more about information about dispersion in edgeR manual http://www.bioconductor.org/packages/release/bioc/manuals/edgeR/man/edgeR.pdf
 dispersion: "0.1"
+
+# BUSCO lineage
+# The assesed lineage is automatically chosen by BUSCO.
+# If you want to use specified lineage you can change this parameter
+# by specifying the lineage.
+# For example:
+# lineage: "eudicots_odb10"
+# You can list all possible lineages by running "busco --list-datasets"
+lineage: "eudicots_odb10"
