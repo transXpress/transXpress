@@ -736,7 +736,7 @@ rule rnaspades:
   shell:
     """
     ##TODO = kmer shouldn't be fixed, & should be configurable from the beginning of the script (did run into some bugs with the auto parameter)
-    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out --only-assembler -k 47 &> {log}
+    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out {config[strand_specific]} --only-assembler -k {config[kmers]} &> {log}
     ##Make a fake gene_trans_map file
     seqkit seq -n {output.transcriptome} | while read id ; do echo -e "$id\\t$id" ; done > {output.gene_trans_map} 2>> {log}
     """
