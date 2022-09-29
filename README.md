@@ -58,7 +58,7 @@ conda config --set channel_priority false
 conda install "snakemake>=5.4.2" fastqc multiqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget sra-tools
 conda install r bioconductor-edger r-tidyverse
 conda install "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
-conda instal "trinity>=2.13.2" trimmomatic bowtie2 "busco>=4" rsem
+conda install "trinity>=2.13.2" trimmomatic bowtie2 "busco>=4" rsem
 ~~~~
 
 5. Install deeploc:
