@@ -22,7 +22,7 @@ TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PAT
 # https://github.com/griffithlab/rnaseq_tutorial/wiki/Trinity-Assembly-And-Analysis
 
 # These rules don't need to be sent to a cluster
-localrules: all, clean, trimmomatic_split, trimmomatic_merge, samples_yaml_conversion, trinity_butterfly_split, transcriptome_copy, compare_qc_after_trim, fastqc_before_trim_warnings
+localrules: all, clean, trimmomatic_split, trimmomatic_merge, samples_yaml_conversion, trinity_butterfly_split, transcriptome_copy, compare_qc_after_trim, fastqc_before_trim_warnings, IGV
 
 
 rule all:
@@ -39,7 +39,7 @@ rule all:
     "transcriptome_annotated.pep",
     "transcriptome_TPM_blast.csv",
     "busco",
-    "busco_report.txt"
+    "busco_report.txt",
     "fastqc_before_trim",
     "multiqc_before_trim",
     "fastqc_after_trim",
@@ -868,7 +868,7 @@ rule transdecoder_predict:
     """
 
 
-rule align_reads:
+checkpoint align_reads:
   """
   Not run by default.
   Runs Trinity script aligning the reads to the transcriptome using Bowtie2
@@ -879,7 +879,7 @@ rule align_reads:
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map"
   output:
-    "RSEM_out.gene.TMM.EXPR.matrix"
+    "transcriptome.fasta.bowtie2.ok"
   log:
     "logs/bowtie2.log"
   params:
@@ -888,11 +888,72 @@ rule align_reads:
     16
   shell:
     """
-    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &> {log}
-    # samtools sort -l 9 -@ {threads} -T  ??? ???/bowtie2.bam > bowtie2.sorted.bam
-    # samtools index bowtie2.sorted.bam
+    assembler="{config[assembler]}"
+    strand_specific="{config[strand_specific]}"
+    
+    if [ $assembler = "rnaspades" ]
+    then
+      if [[ $strand_specific = "--ss rf" ]]
+      then
+        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type RF --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &> {log}
+      elif [[ $strand_specific = "--ss fr" ]]
+      then
+        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type FR --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
+      else
+        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
+      fi
+    else
+      {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
+    fi
     """
 
+checkpoint prepare_samples_for_IGV:
+  """
+  Not run by default.
+  Moves bam alignment files to bowtie_alignments directory
+  and prepares the files to be used by IGV by sorting and 
+  indexing them.
+  """
+  input:
+    alignment="{sample}/bowtie2.bam"
+  output:
+    alignment="bowtie_alignments/{sample}.bam",
+    sorted_alignment="bowtie_alignments/{sample}.sorted.bam",
+    indexed_alignment="bowtie_alignments/{sample}.sorted.bam.bai"
+  log:
+    "logs/prepare_for_IGV_{sample}.log"
+  params:
+    memory="2"
+  threads:
+    1
+  shell:
+    """
+    cp {input.alignment} {output.alignment} &> {log}
+    samtools sort --threads {threads} -o {output.sorted_alignment} {output.alignment} &>> {log}
+    samtools index {output.sorted_alignment} &>> {log}
+    """ 
+
+def get_igv(wildcards):
+  indeces = glob_wildcards("{sample}/bowtie2.bam").sample
+  completed = expand(os.path.join("bowtie_alignments", "{sample}.sorted.bam.bai"),sample=indeces)
+  return completed
+
+rule IGV:
+  """
+  Not run by default.
+  Rule to be called to get all bowtie alignments ready for IGV.
+  """
+  input:
+    get_igv,
+    "transcriptome.fasta.bowtie2.ok"
+  output:
+    "igv.ok"
+  log:
+    "logs/IGV_combine.log"
+  shell:
+    """
+    touch {output}
+    """
 
 rule trinity_DE:
   """

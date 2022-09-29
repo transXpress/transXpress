@@ -29,6 +29,7 @@ transXpress requires:
 * tidyverse (required for Trinity, install via conda)
 * python 3.6, numpy 1.16, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
 * busco 4+ (install via conda)
+* rsem (install via conda)
 * [deeploc](https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0)
 * [targetp 2.0](http://www.cbs.dtu.dk/services/TargetP/)
 * tmhmm.py (install via pip)
@@ -57,7 +58,7 @@ conda config --set channel_priority false
 conda install "snakemake>=5.4.2" fastqc multiqc transdecoder samtools infernal hmmer kallisto blast=2.10 seqkit wget sra-tools
 conda install r bioconductor-edger r-tidyverse
 conda install "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.11 parallel spades
-conda instal "trinity>=2.13.2" trimmomatic bowtie2 "busco>=4"
+conda instal "trinity>=2.13.2" trimmomatic bowtie2 "busco>=4" rsem
 ~~~~
 
 5. Install deeploc:
@@ -136,6 +137,18 @@ cd tests
 ./run_test.sh
 ~~~~
 
+## Align reads to the transcriptome assembly and visualize the results in IGV
+If you want to align reads to the transcriptome assembly and visualize the results in IGV, you can use the following commands:
+~~~~
+snakemake align_reads --cores 16 
+snakemake IGV --cores 4
+~~~~
+
+Files for IGV visualization will be in the bowtie_alignments folder: 
+~~~~
+bowtie_alignments/{sample}.sorted.bam
+bowtie_alignments/{sample}sorted.bam.bai
+~~~~
 
 ## The directed acyclic graph (DAG) of the transXpress pipeline execution
 
