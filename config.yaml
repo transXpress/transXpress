@@ -35,16 +35,23 @@ targetp: "non-pl"
 # strand_specific: "--ss rf"
 strand_specific: ""
 
-# For rnaSPAdes assembler select kmer sizes.
+# Only for rnaSPAdes assembler:
+# By default rnaSPAdes selects 2 kmer sizes, approximately 1/3 and 1/2 of read length.
+# kmers: ""
+#
+# You can also choose different kmer sizes
 # !!! all values must be odd, less than 128 and listed in ascending order !!!
 # For example:
-# kmers: "21,33,55"
+# kmers: "-k 21,33,55"
 #
-# For Illumina 150 bp reads, it is recommended to use: 21,33,55
-# For reads between 150 and 249, it is recommended to use: 21,33,55,77
-# For 250bp reads and longer, it is recommended to use: 21,33,55,77,99,127
-# You can also use single kmer size but it is not recommended by rnaSPAdes. (kmers: "47")
-kmers: "21,33,55"
+# Different sources give different recommendations for the k-mer sizes, so there is no definite recommendation.
+#
+# Recommendations by rnaSPAdes (Source: Using SPAdes De Novo Assembler https://pubmed.ncbi.nlm.nih.gov/32559359/)
+# 150 bp reads: 21,33,55 (kmers: "-k 21,33,55")
+# 150 bp - 249 bp: 21,33,55,77 (kmers: "-k 21,33,55,77")
+# 250 bp: 21,33,55,77,99,127 (kmers: "-k 21,33,55,77,99,127")
+# You can also use single kmer size but it is not recommended by rnaSPAdes. (kmers: "-k 47")
+kmers: ""
 
 # Can be used for species name etc
 annotated_fasta_prefix: ""
