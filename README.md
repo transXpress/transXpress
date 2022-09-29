@@ -145,6 +145,7 @@ snakemake IGV --cores 4
 ~~~~
 
 Then you can load your transcriptome file to IGV: Genomes -> Load Genome from File -> select the file *transcriptome.fasta*
+
 Your sorted .bam files will be in the bowtie_alignments folder: 
 ~~~~
 bowtie_alignments/{sample}.sorted.bam
