@@ -19,11 +19,39 @@ trinity_parameters: "--seqType fq"
 targetp: "non-pl"
 
 # Strand-specific RNA-Seq read orientation.
-# if paired: RF or FR,
-# if single: F or R.   (dUTP method = RF)
+#
+# For Trinity assembler use
+# if paired: RF or FR, (dUTP method = RF)
+# if single: F or R.   
+#
 # This parameter is used for both Trinity and read alignment steps
-# strand_specific: --SS_lib_type RF
+#
+# For example:
+# strand_specific: "--SS_lib_type RF"
+#
+# For rnaSPAdes assembler use
+# if paired: fr (normal) or rf (antisense)
+# For example:
+# strand_specific: "--ss rf"
 strand_specific: ""
+
+# Only for rnaSPAdes assembler:
+# By default rnaSPAdes selects 2 kmer sizes, approximately 1/3 and 1/2 of read length.
+# kmers: ""
+#
+# You can also choose different kmer sizes
+# !!! all values must be odd, less than 128 and listed in ascending order !!!
+# For example:
+# kmers: "-k 21,33,55"
+#
+# Different sources give different recommendations for the k-mer sizes, so there is no definite recommendation.
+#
+# Recommendations by rnaSPAdes (Source: Using SPAdes De Novo Assembler https://pubmed.ncbi.nlm.nih.gov/32559359/)
+# 150 bp reads: 21,33,55 (kmers: "-k 21,33,55")
+# 150 bp - 249 bp: 21,33,55,77 (kmers: "-k 21,33,55,77")
+# 250 bp: 21,33,55,77,99,127 (kmers: "-k 21,33,55,77,99,127")
+# You can also use single kmer size but it is not recommended by rnaSPAdes. (kmers: "-k 47")
+kmers: ""
 
 # Can be used for species name etc
 annotated_fasta_prefix: ""
