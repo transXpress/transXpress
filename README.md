@@ -149,7 +149,7 @@ Then you can load your transcriptome file to IGV: Genomes -> Load Genome from Fi
 Your sorted .bam files will be in the bowtie_alignments folder: 
 ~~~~
 bowtie_alignments/{sample}.sorted.bam
-bowtie_alignments/{sample}sorted.bam.bai
+bowtie_alignments/{sample}.sorted.bam.bai
 ~~~~
 Load them to IGV: File -> Load from File -> select the *bowtie_alignments/{sample}.sorted.bam* files
 
