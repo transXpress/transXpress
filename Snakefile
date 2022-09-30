@@ -781,7 +781,7 @@ rule trinity_stats:
   shell:
     """
     assembler={config[assembler]}
-    if [ "$assembler" -eq 'trinity' ]; then
+    if [ "$assembler" = 'trinity' ]; then
         {TRINITY_HOME}/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
     else
         {TRINITY_HOME}/util/TrinityStats.pl {input.transcriptome} | sed -e 's/trinity/rnaspades/g' > {output.stats} 2> {log}
