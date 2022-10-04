@@ -30,7 +30,7 @@ transXpress requires:
 * python 3.6, numpy 1.16, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
 * busco 4+ (install via conda)
 * rsem (install via conda)
-* [deeploc](https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0)
+* [deeploc 2](https://services.healthtech.dtu.dk/service.php?DeepLoc-2.0)
 * [targetp 2.0](http://www.cbs.dtu.dk/services/TargetP/)
 * tmhmm.py (install via pip)
 * basic Linux utitilies: split, awk, cut, gzip
@@ -61,15 +61,13 @@ conda install "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.1
 conda install "trinity>=2.13.2" trimmomatic bowtie2 "busco>=4" rsem
 ~~~~
 
-5. Install deeploc:
-      * Download deeploc from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
+5. Install deeploc 2:
+      * Download deeploc 2 from https://services.healthtech.dtu.dk/service.php?DeepLoc-2.0 (go to Downloads)
       * Unpack and install deeploc:
         ~~~~
-         tar zxvf deeploc-1.0.All.tar.gz
-         cd deeploc-1.0
-         pip install git+https://github.com/Lasagne/Lasagne.git (other requirements for deeploc like Numpy, Scipy, Theano==1.01 are already installed via conda)
-         # install deeploc itself
-         python setup.py install
+         tar zxvf deeploc-2.0.All.tar.gz
+         cd deeploc2_package
+         pip install .
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
 6. Install targetp 2.0:

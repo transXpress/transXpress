@@ -1355,7 +1355,7 @@ rule tmhmm_parallel:
 
 rule deeploc_parallel:
   """
-  Runs Deeploc on smaller protein files in parallel to predict their subcellular
+  Runs Deeploc 2 on smaller protein files in parallel to predict their subcellular
   localization.
   """
   input:
@@ -1373,8 +1373,8 @@ rule deeploc_parallel:
     # Required for deeploc in some installations
     # See https://github.com/Theano/Theano/issues/6568
     export MKL_THREADING_LAYER=GNU
-    deeploc -f {input} -o {output} &> {log}
-    mv {output}.txt {output} &>> {log}
+    deeploc2 -f {input} -o {wildcards.index} &> {log}
+    mv {wildcards.index}/*.csv {output} &>> {log}
     """
 
 rule targetp_parallel:
@@ -1616,7 +1616,7 @@ rule annotated_fasta:
       ## Load deeploc results
       print ("Loading deeploc predictions from", input["deeploc_results"], file=log_handle)
       with open(input["deeploc_results"]) as input_handle:
-        csv_reader = csv.reader(input_handle, delimiter="\t")
+        csv_reader = csv.reader(input_handle, delimiter=",")
         for row in csv_reader:
           if (len(row) < 2): continue
           deeploc_annotations[row[0]] = str(row[1])
