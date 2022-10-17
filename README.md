@@ -30,7 +30,7 @@ transXpress requires:
 * python 3.6, numpy 1.16, scipy 1.0, theano 1.0.1, six 1.11 (required for deeploc, install via conda)
 * busco 4+ (install via conda)
 * rsem (install via conda)
-* [deeploc](https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0)
+* [SignalP 6.0](https://services.healthtech.dtu.dk/service.php?SignalP)
 * [targetp 2.0](http://www.cbs.dtu.dk/services/TargetP/)
 * tmhmm.py (install via pip)
 * basic Linux utitilies: split, awk, cut, gzip
@@ -61,15 +61,15 @@ conda install "python>=3.6" biopython numpy=1.16 scipy=1.0 theano=1.0.1 six==1.1
 conda install "trinity>=2.13.2" trimmomatic bowtie2 "busco>=4" rsem
 ~~~~
 
-5. Install deeploc:
-      * Download deeploc from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
-      * Unpack and install deeploc:
+5. Install SignalP 6.0 (fast):
+      * Download SignalP 6.0 fast from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
+      * Unpack and install signalp:
         ~~~~
-         tar zxvf deeploc-1.0.All.tar.gz
-         cd deeploc-1.0
-         pip install git+https://github.com/Lasagne/Lasagne.git (other requirements for deeploc like Numpy, Scipy, Theano==1.01 are already installed via conda)
-         # install deeploc itself
-         python setup.py install
+         tar zxvf signalp-6.0g.fast.tar.gz
+         cd signalp6_fast
+         pip install signalp-6-package/
+         SIGNALP_DIR=$(python -c "import signalp; import os; print(os.path.dirname(signalp.__file__))" )
+         cp -r signalp-6-package/models/* $SIGNALP_DIR/model_weights/
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
 6. Install targetp 2.0:
@@ -88,7 +88,7 @@ pip install tmhmm.py
 ~~~~
 for p in snakemake fastqc multiqc transdecoder samtools infernal hmmer kallisto \
     blast seqkit wget sra-tools bioconductor-edger r-tidyverse trinity trimmomatic \
-    bowtie2 biopython numpy scipy theano six parallel spades ; do echo "package $p";
+    bowtie2 biopython numpy parallel spades ; do echo "package $p";
     conda list | grep "$p"; done
 ~~~~
 
