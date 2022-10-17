@@ -1420,7 +1420,24 @@ rule kallisto:
     8
   shell:
     """
-    {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+    assembler="{config[assembler]}"
+    strand_specific="{config[strand_specific]}"
+
+    if [ $assembler = "rnaspades" ]
+    then
+      if [[ $strand_specific = "--ss rf" ]]
+      then
+        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type RF --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+      elif [[ $strand_specific = "--ss fr" ]]
+      then
+        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type FR --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+      else
+        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+      fi
+    else
+      {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+    fi
+    
     {TRINITY_HOME}/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv &>> {log}
     if [ -f kallisto.isoform.TMM.EXPR.matrix ]; then
       cp -p kallisto.isoform.TMM.EXPR.matrix {output[0]} &>> {log}
