@@ -1370,7 +1370,7 @@ rule signalp_parallel:
     """
     mkdir -p annotations/signalp &> {log}
     signalp6 --fastafile {input} --organism eukarya --output_dir signalp_{wildcards.index} --format none --mode fast &>> {log}
-    mv signalp/{wildcards.index}/prediction_results.txt {output}
+    mv signalp_{wildcards.index}/prediction_results.txt {output}
     rm -r signalp_{wildcards.index}
     """
 
