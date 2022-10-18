@@ -106,6 +106,9 @@ rule multiqc_before_trim:
     1
   shell:
     """
+    # common error resolved by those two export commands
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
     mkdir {output.out_dir} &> {log}
     multiqc -o {output.out_dir} {input} &>> {log}
     cp multiqc_before_trim/multiqc_data/multiqc_fastqc.txt {output.report} &>> {log}
@@ -461,6 +464,9 @@ rule multiqc_after_trim:
     1
   shell:
     """
+    # common error resolved by those two export commands
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
     mkdir {output.out_directory} &> {log}
     multiqc -o {output.out_directory} {input} &>> {log}
     cp multiqc_after_trim/multiqc_data/multiqc_fastqc.txt {output.report} &>> {log}
