@@ -1363,7 +1363,7 @@ rule signalp_parallel:
   log:
     "logs/signalp_{index}.log"
   params:
-    memory="4"
+    memory="8"
   threads:
     1
   shell:
