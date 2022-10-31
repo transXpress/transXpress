@@ -1374,30 +1374,6 @@ rule signalp_parallel:
     rm -r signalp_{wildcards.index}
     """
 
-#rule deeploc_parallel:
-#  """
-#  Runs Deeploc on smaller protein files in parallel to predict their subcellular
-#  localization.
-#  """
-#  input:
-#    "annotations/chunks_pep/{index}.pep"
-#  output:
-#    "annotations/deeploc/{index}.out"
-#  log:
-#    "logs/deeploc_{index}.log"
-#  params:
-#    memory="2"
-#  threads:
-#    1
-#  shell:
-#    """
-#    # Required for deeploc in some installations
-#    # See https://github.com/Theano/Theano/issues/6568
-#    export MKL_THREADING_LAYER=GNU
-#    deeploc -f {input} -o {output} &> {log}
-#    mv {output}.txt {output} &>> {log}
-#    """
-
 rule targetp_parallel:
   """
   Runs TargetP on smaller protein files to predict presence and type of
@@ -1573,7 +1549,6 @@ rule annotated_fasta:
     blastp_results="annotations/sprotblastp_orfs.out",
     pfam_results="annotations/pfam_orfs.out",
     tmhmm_results="annotations/tmhmm_pep.out",
-    #deeploc_results="annotations/deeploc_pep.out",
     signalp_results="annotations/signalp_pep.out",
     targetp_results="annotations/targetp_pep.out"
   output:
@@ -1596,7 +1571,6 @@ rule annotated_fasta:
       pfam_annotations = {}
       rfam_annotations = {}
       tmhmm_annotations = {}
-      #deeploc_annotations = {}
       signalp_annotations = {}
       targetp_annotations = {}
   
@@ -1652,14 +1626,6 @@ rule annotated_fasta:
         for row in csv_reader:
           if (len(row) > 2):
             tmhmm_annotations[row[0]] = row[1] + " " + row[2]
- 
-      ## Load deeploc results
-      #print ("Loading deeploc predictions from", input["deeploc_results"], file=log_handle)
-      #with open(input["deeploc_results"]) as input_handle:
-      #  csv_reader = csv.reader(input_handle, delimiter="\t")
-      #  for row in csv_reader:
-      #    if (len(row) < 2): continue
-      #    deeploc_annotations[row[0]] = str(row[1])
 
       ## Load signalp results
       print ("Loading signalp predictions from", input["signalp_results"], file=log_handle)
@@ -1728,8 +1694,6 @@ rule annotated_fasta:
             record.description += "; tmhmm: " + tmhmm_annotations.get(record.id)
           if record.id in signalp_annotations:
             record.description += "; signalp: " + signalp_annotations.get(record.id)
-          #if record.id in deeploc_annotations:
-          #  record.description += "; deeploc: " + deeploc_annotations.get(record.id)
           if record.id in targetp_annotations:
             record.description += "; targetp: " + targetp_annotations.get(record.id)
           # Add sequence ID prefix from configuration
