@@ -1,0 +1,15 @@
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+dependencies:
+  - trinity
+  - bioconductor-edger
+  - kallisto
+  - r
+  - r-tidyverse
+  - bowtie
+  - samtools
+  - rsem
+  
