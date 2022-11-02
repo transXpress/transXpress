@@ -31,7 +31,7 @@ transXpress requires:
 * busco 4+ (install via conda)
 * rsem (install via conda)
 * [SignalP 6.0](https://services.healthtech.dtu.dk/service.php?SignalP)
-* [targetp 2.0](http://www.cbs.dtu.dk/services/TargetP/)
+* [TargetP 2.0](https://services.healthtech.dtu.dk/service.php?TargetP-2.0)
 * tmhmm.py (install via pip)
 * basic Linux utitilies: split, awk, cut, gzip
 
@@ -72,7 +72,7 @@ conda install "trinity>=2.13.2" trimmomatic bowtie2 "busco>=4" rsem
          cp -r signalp-6-package/models/* $SIGNALP_DIR/model_weights/
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
-6. Install targetp 2.0:
+6. Install TargetP 2.0:
       * Download TargetP 2.0 from https://services.healthtech.dtu.dk/software.php
       * extract the tarball and add path to targetp /bin/ folder to the PATH variable
         ~~~~
