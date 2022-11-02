@@ -27,7 +27,7 @@ case "$CLUSTER" in
   ;;
 "PBS")
   echo "Submitting snakemake jobs to PBS/Torque cluster"
-  snakemake --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "qsub -o {log}.slurm.out -e {log}.slurm.err -l select=1:ncpus={threads},mem={params.memory}gb" "$@"
+  snakemake --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "qsub -o {log}.slurm.out -e {log}.slurm.err -l select=1:ncpus={threads}:mem={params.memory}gb" "$@"
   ;;
 *)
   snakemake --cores all "$@"

@@ -12,7 +12,7 @@ min_version("5.4.1")
 
 configfile: "config.yaml"
 
-for executable in ["samtools", "bowtie2", "kallisto", "deeploc", "targetp", "Trinity", "blastx", "blastp", "makeblastdb", "cmscan", "hmmscan", "fastqc", "rnaspades.py", "seqkit", "R"]:
+for executable in ["samtools", "bowtie2", "kallisto", "signalp6", "targetp", "Trinity", "blastx", "blastp", "makeblastdb", "cmscan", "hmmscan", "fastqc", "rnaspades.py", "seqkit", "R"]:
     if not shutil.which(executable):
         sys.stderr.write("Warning: Cannot find %s in your PATH%s" % (executable, os.path.sep))
 
@@ -1358,29 +1358,26 @@ rule tmhmm_parallel:
         os.remove(annotation_file)
         os.remove(plot_file)
 
-
-rule deeploc_parallel:
+rule signalp_parallel:
   """
-  Runs Deeploc on smaller protein files in parallel to predict their subcellular
-  localization.
+  Runs signalp on smaller protein files in parallel to predict signal peptides.
   """
   input:
     "annotations/chunks_pep/{index}.pep"
   output:
-    "annotations/deeploc/{index}.out"
+    "annotations/signalp/{index}.out"
   log:
-    "logs/deeploc_{index}.log"
+    "logs/signalp_{index}.log"
   params:
-    memory="2"
+    memory="8"
   threads:
     1
   shell:
     """
-    # Required for deeploc in some installations
-    # See https://github.com/Theano/Theano/issues/6568
-    export MKL_THREADING_LAYER=GNU
-    deeploc -f {input} -o {output} &> {log}
-    mv {output}.txt {output} &>> {log}
+    mkdir -p annotations/signalp &> {log}
+    signalp6 --fastafile {input} --organism eukarya --output_dir signalp_{wildcards.index} --format none --mode fast &>> {log}
+    mv signalp_{wildcards.index}/prediction_results.txt {output}
+    rm -r signalp_{wildcards.index}
     """
 
 rule targetp_parallel:
@@ -1558,7 +1555,7 @@ rule annotated_fasta:
     blastp_results="annotations/sprotblastp_orfs.out",
     pfam_results="annotations/pfam_orfs.out",
     tmhmm_results="annotations/tmhmm_pep.out",
-    deeploc_results="annotations/deeploc_pep.out",
+    signalp_results="annotations/signalp_pep.out",
     targetp_results="annotations/targetp_pep.out"
   output:
     transcriptome_annotated="transcriptome_annotated.fasta",
@@ -1580,7 +1577,7 @@ rule annotated_fasta:
       pfam_annotations = {}
       rfam_annotations = {}
       tmhmm_annotations = {}
-      deeploc_annotations = {}
+      signalp_annotations = {}
       targetp_annotations = {}
   
       ## Load kallisto results
@@ -1635,14 +1632,28 @@ rule annotated_fasta:
         for row in csv_reader:
           if (len(row) > 2):
             tmhmm_annotations[row[0]] = row[1] + " " + row[2]
- 
-      ## Load deeploc results
-      print ("Loading deeploc predictions from", input["deeploc_results"], file=log_handle)
-      with open(input["deeploc_results"]) as input_handle:
+
+      ## Load signalp results
+      print ("Loading signalp predictions from", input["signalp_results"], file=log_handle)
+      with open(input["signalp_results"]) as input_handle:
         csv_reader = csv.reader(input_handle, delimiter="\t")
         for row in csv_reader:
           if (len(row) < 2): continue
-          deeploc_annotations[row[0]] = str(row[1])
+          prediction = str(row[1])
+          if prediction == "OTHER":
+            signalp_annotations[row[0]] = "OTHER (No SP)"
+          elif prediction == "SP":
+            signalp_annotations[row[0]] = "standard secretory signal peptides (Sec/SPI)"
+          elif prediction == "LIPO":
+            signalp_annotations[row[0]] = "lipoprotein signal peptides (Sec/SPII)"
+          elif prediction == "TAT":
+            signalp_annotations[row[0]] = "Tat signal peptides (Tat/SPI)"
+          elif prediction == "TATLIPO":
+            signalp_annotations[row[0]] = "Tat lipoprotein signal peptides (Tat/SPII)"
+          elif prediction == "PILIN":
+            signalp_annotations[row[0]] = "Pilin and pilin-like signal peptides (Sec/SPIII)"
+          else:
+            signalp_annotations[row[0]] = str(row[1])
 
       ## Load targetp results
       translation =    {"SP": "Signal peptide",
@@ -1687,8 +1698,8 @@ rule annotated_fasta:
             record.description += "; rfam: " + rfam_annotations.get(transcript_id)
           if record.id in tmhmm_annotations:
             record.description += "; tmhmm: " + tmhmm_annotations.get(record.id)
-          if record.id in deeploc_annotations:
-            record.description += "; deeploc: " + deeploc_annotations.get(record.id)
+          if record.id in signalp_annotations:
+            record.description += "; signalp: " + signalp_annotations.get(record.id)
           if record.id in targetp_annotations:
             record.description += "; targetp: " + targetp_annotations.get(record.id)
           # Add sequence ID prefix from configuration
