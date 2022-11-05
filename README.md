@@ -131,7 +131,7 @@ Or run snakemake manually on an LSF cluster:
 snakemake --latency-wait 60 --jobs 10000 --cluster 'bsub -n {threads} -R "rusage[mem={params.memory}000] span[hosts=1]" -oo {log}.bsub'
 ~~~~
 
-### Running speficic steps
+### Running specific steps
 
 You can run specific steps of the pipeline by specifying a rule or a resulting file:
 ~~~
