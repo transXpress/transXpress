@@ -131,6 +131,19 @@ Or run snakemake manually on an LSF cluster:
 snakemake --latency-wait 60 --jobs 10000 --cluster 'bsub -n {threads} -R "rusage[mem={params.memory}000] span[hosts=1]" -oo {log}.bsub'
 ~~~~
 
+### Running speficic steps
+
+You can run specific steps of the pipeline by specifying a rule or a resulting file:
+~~~
+# run only the rules until the multiqc_before_trim rule to check quality of the input data
+./transXpress.sh multiqc_before_trim
+~~~
+
+~~~
+# run only the rules to produce samples_trimmed.txt file
+./transXpress.sh samples_trimmed.txt
+~~~
+
 ## Running tests
 ~~~~
 cd tests
@@ -140,8 +153,8 @@ cd tests
 ## Align reads to the transcriptome assembly and visualize the results in IGV
 If you want to align reads to the transcriptome assembly and visualize the results in IGV, you can use the following commands:
 ~~~~
-snakemake align_reads --cores 16 
-snakemake IGV --cores 4
+./transXpress.sh align_reads --cores 16 
+./transXpress.sh IGV --cores 4
 ~~~~
 
 Then you can load your transcriptome file to IGV: Genomes -> Load Genome from File -> select the file *transcriptome.fasta*
