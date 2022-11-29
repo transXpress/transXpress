@@ -81,8 +81,9 @@ rule fastqc_before_trim:
   shell:
     """
     # run fastqc on input files
+    fastqc --version > {log} # prints version in log
     # making directory for the fastqc summary files
-    mkdir {output} &> {log}
+    mkdir {output} &>> {log}
     FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input}) &>> {log}
     # running fasqc on the files
     for file in $FILES; do fastqc -f fastq -o {output} $file; done &>> {log}
@@ -109,7 +110,8 @@ rule multiqc_before_trim:
     # common error resolved by those two export commands
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
-    mkdir {output.out_dir} &> {log}
+    multiqc --version > {log} # prints version in log
+    mkdir {output.out_dir} &>> {log}
     multiqc -o {output.out_dir} {input} &>> {log}
     cp multiqc_before_trim/multiqc_data/multiqc_fastqc.txt {output.report} &>> {log}
     """
@@ -380,6 +382,7 @@ rule trimmomatic_parallel:
     4
   shell:
     """
+    trimmomatic -version > {log} # print version to log
     # note: trimmomatic can use gzipped files directly
     read SAMPLE REPLICATE F_READS R_READS < {input}
     # If the sample line is empty, ignore it
@@ -388,10 +391,10 @@ rule trimmomatic_parallel:
       exit 0
     fi
     if [ ! -z "$R_READS" ]; then
-      trimmomatic PE -threads {threads} $F_READS $R_READS trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R1-U.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-U.qtrim.fastq.gz {config[trimmomatic_parameters]} &> {log}
+      trimmomatic PE -threads {threads} $F_READS $R_READS trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R1-U.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-U.qtrim.fastq.gz {config[trimmomatic_parameters]} &>> {log}
       echo $SAMPLE	$REPLICATE	trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz	trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz > {output} 2>> {log}
     else
-      trimmomatic SE -threads {threads} $F_READS trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz {config[trimmomatic_parameters]} &> {log}
+      trimmomatic SE -threads {threads} $F_READS trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz {config[trimmomatic_parameters]} &>> {log}
       echo $SAMPLE      $REPLICATE      trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz > {output} 2>> {log}
     fi
     """
@@ -439,6 +442,7 @@ rule fastqc_after_trim:
   shell:
     """
     # run fastqc on input files
+    fastqc --version > {log} # prints version to log
     # making directory for the fastqc summary files
     mkdir {output} &> {log}
     FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input}) &>> {log}
@@ -467,7 +471,8 @@ rule multiqc_after_trim:
     # common error resolved by those two export commands
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
-    mkdir {output.out_directory} &> {log}
+    multiqc --version > {log} # prints version to log
+    mkdir {output.out_directory} &>> {log}
     multiqc -o {output.out_directory} {input} &>> {log}
     cp multiqc_after_trim/multiqc_data/multiqc_fastqc.txt {output.report} &>> {log}
     """
@@ -627,7 +632,8 @@ rule trinity_inchworm_chrysalis:
     16
   shell:
     """
-    Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} &> {log}
+    Trinity --version > {log} # prints version to log
+    Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     """
 
 
@@ -719,6 +725,7 @@ rule trinity_final:
     16
   shell:
     """
+    Trinity --version > {log} # prints version to log
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     """
 
@@ -741,7 +748,8 @@ rule rnaspades:
     16
   shell:
     """
-    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out {config[strand_specific]} --only-assembler {config[kmers]} &> {log}
+    rnaspades.py --version > {log} # prints version to log
+    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out {config[strand_specific]} --only-assembler {config[kmers]} &>> {log}
     ##Make a fake gene_trans_map file
     seqkit seq -n {output.transcriptome} | while read id ; do echo -e "$id\\t$id" ; done > {output.gene_trans_map} 2>> {log}
     """
@@ -813,7 +821,8 @@ rule busco:
     4
   shell:
     """
-    lineage={config[lineage]} &> {log}
+    busco --version > {log} # prints version to log
+    lineage={config[lineage]} &>> {log}
     if [ -z "$lineage"] &>> {log}
     then &>> {log}
       busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} --auto-lineage -c {threads} &>> {log}
@@ -849,7 +858,8 @@ rule transdecoder_longorfs:
     1
   shell:
     """
-    rm -rf {input.transcriptome}.transdecoder_dir &> {log}
+    TransDecoder.LongOrfs --version > {log} # prints version to log
+    rm -rf {input.transcriptome}.transdecoder_dir &>> {log}
     TransDecoder.LongOrfs -t {input.transcriptome} --output_dir transdecoder &>> {log} 
     cp -p transdecoder/longest_orfs.pep {output.orfs} &>> {log}
     """
@@ -874,6 +884,7 @@ rule transdecoder_predict:
     1
   shell:
     """
+    TransDecoder.Predict --version > {log} # prints version to log
     TransDecoder.Predict -t {input.transcriptome} --output_dir transdecoder --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
     cp -p {input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
@@ -899,6 +910,8 @@ checkpoint align_reads:
     16
   shell:
     """
+    bowtie2 --version > {log} # prints version to log
+    conda list | grep rsem >> {log} # prints version to log
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
     
@@ -906,7 +919,7 @@ checkpoint align_reads:
     then
       if [[ $strand_specific = "--ss rf" ]]
       then
-        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type RF --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &> {log}
+        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type RF --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
       elif [[ $strand_specific = "--ss fr" ]]
       then
         {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type FR --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
@@ -939,7 +952,8 @@ checkpoint prepare_samples_for_IGV:
     1
   shell:
     """
-    cp {input.alignment} {output.alignment} &> {log}
+    samtools --version > {log} # prints version to log
+    cp {input.alignment} {output.alignment} &>> {log}
     samtools sort --threads {threads} -o {output.sorted_alignment} {output.alignment} &>> {log}
     samtools index {output.sorted_alignment} &>> {log}
     """ 
@@ -983,7 +997,8 @@ rule trinity_DE:
     1
   shell:
     """
-    num_replicates=`awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` &> {log}
+    conda list | grep bioconductor-edger > {log} # prints version to log
+    num_replicates=`awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` &>> {log}
     num_samples=`awk '{{print $1}}' {input.samples} | sort | uniq | wc -l` &>> {log}
     num_replicates_minus_samples=$((num_replicates - num_samples)) &>> {log}
     if [ $num_replicates_minus_samples -gt 1 ] &>> {log}
@@ -1212,6 +1227,7 @@ rule rfam_parallel:
     2
   shell:
     """
+    cmscan -h | grep '#' > {log} # print version to log
     cmscan -E {config[e_value_threshold]} --rfam --cpu {threads} --tblout {output} {input[db]} {input[fasta]} &> {log}
     """
 
@@ -1233,6 +1249,7 @@ rule pfam_parallel:
     2
   shell:
     """
+    hmmscan -h | grep "#" > {log} # print version to log
     # Transdecoder requires --domtblout output
     hmmscan -E {config[e_value_threshold]} --cpu {threads} --domtblout {output} {input[db]} {input[fasta]} &> {log}
     """
@@ -1255,6 +1272,7 @@ rule sprot_blastp_parallel:
     2
   shell:
     """
+    blastp -version > {log} # print version to log
     blastp -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
     """
 
@@ -1276,6 +1294,7 @@ rule sprot_blastx_parallel:
     2
   shell:
     """
+    blastx -version > {log} # print version to log
     blastx -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
     """
 
@@ -1303,6 +1322,9 @@ rule tmhmm_parallel:
 
     # open the input file, output file and log file
     with open(input[0], "r") as input_handle, open(output[0], "a+") as output_handle, open(log[0], "a+") as log_handle:
+      # print version to log
+      version = os.popen('conda list | grep tmhmm-py').read()
+      log_handle.write(version + '\n')
 
       # iterate through individual sequences in input file, tmhmm.py can be executed with just one sequence at a time
       for record in Bio.SeqIO.parse(input_handle, "fasta"):
@@ -1374,6 +1396,7 @@ rule signalp_parallel:
     1
   shell:
     """
+    signalp6 --version > {log} # print version to log
     mkdir -p annotations/signalp &> {log}
     signalp6 --fastafile {input} --organism eukarya --output_dir signalp_{wildcards.index} --format none --mode fast &>> {log}
     mv signalp_{wildcards.index}/prediction_results.txt {output}
@@ -1397,6 +1420,7 @@ rule targetp_parallel:
     1
   shell:
     """
+    targetp -version > {log} # print version to log
     targetp -fasta {input} -format short -org {config[targetp]} -prefix {wildcards.index} &> {log}
     mv {wildcards.index}_summary.targetp2 {output} &>> {log}
     """
@@ -1423,6 +1447,7 @@ rule kallisto:
     8
   shell:
     """
+    kallisto version > {log} # print version to log
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
 
@@ -1475,6 +1500,7 @@ rule download_sprot:
     1
   shell:
     """
+    makeblastdb -version > {log} # print version to log
     wget --directory-prefix db "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" &> {log}
     gunzip db/uniprot_sprot.fasta.gz &>> {log}
     makeblastdb -in db/uniprot_sprot.fasta -dbtype prot &>> {log}
@@ -1495,6 +1521,7 @@ rule download_pfam:
     1
   shell:
     """
+    hmmpress -h | grep "#" > {log} # print version to log
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz" &> {log}
     gunzip db/Pfam-A.hmm.gz &>> {log}
     hmmpress db/Pfam-A.hmm &>> {log}
@@ -1515,6 +1542,7 @@ rule download_rfam:
     1
   shell:
     """
+    cmpress -h | grep "#" > {log} # print version to log
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz" &> {log}
     gunzip db/Rfam.cm.gz &>> {log}
     cmpress db/Rfam.cm &>> {log}    

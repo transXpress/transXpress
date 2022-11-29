@@ -19,18 +19,18 @@ fi
 case "$CLUSTER" in
 "LSF")
   echo "Submitting snakemake jobs to LSF cluster"
-  snakemake --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "bsub -oo {log}.bsub -n {threads} -R rusage[mem={params.memory}000] -R span[hosts=1]" "$@"
+  snakemake --printshellcmds --detailed-summary --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "bsub -oo {log}.bsub -n {threads} -R rusage[mem={params.memory}000] -R span[hosts=1]" "$@"
   ;;
 "SLURM")
   echo "Submitting snakemake jobs to SLURM cluster"
-  snakemake --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "sbatch -o {log}.slurm.out -e {log}.slurm.err -n {threads} --mem {params.memory}GB" "$@"
+  snakemake --printshellcmds --detailed-summary--latency-wait 60 --restart-times 1 --jobs 10000 --cluster "sbatch -o {log}.slurm.out -e {log}.slurm.err -n {threads} --mem {params.memory}GB" "$@"
   ;;
 "PBS")
   echo "Submitting snakemake jobs to PBS/Torque cluster"
-  snakemake --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "qsub -o {log}.slurm.out -e {log}.slurm.err -l select=1:ncpus={threads}:mem={params.memory}gb" "$@"
+  snakemake --printshellcmds -detailed-summary --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "qsub -o {log}.slurm.out -e {log}.slurm.err -l select=1:ncpus={threads}:mem={params.memory}gb" "$@"
   ;;
 *)
-  snakemake --cores all "$@"
+  snakemake --printshellcmds -detailed-summary --cores all "$@"
   ;;
 esac
 
