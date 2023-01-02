@@ -31,7 +31,7 @@ transXpress requires:
 * busco 4+ (install via conda, `envs/busco.yaml`)
 * rsem (install via conda, `envs/trinity_utils.yaml`)
 * [SignalP 6.0](https://services.healthtech.dtu.dk/service.php?SignalP)
-* [targetp 2.0](http://www.cbs.dtu.dk/services/TargetP/)
+* [TargetP 2.0](https://services.healthtech.dtu.dk/service.php?TargetP-2.0)
 * tmhmm.py (install via pip, `envs/default.yaml`)
 * basic Linux utitilies: split, awk, cut, gzip
 
@@ -70,7 +70,7 @@ conda env update --file envs/default.yaml
 snakemake --conda-frontend conda --use-conda --conda-create-envs-only --cores 1
 ~~~~
 
-6. Install SignalP 6.0 (fast):
+7. Install SignalP 6.0 (fast):
       * Download SignalP 6.0 fast from https://services.healthtech.dtu.dk/service.php?DeepLoc-1.0 (go to Downloads)
       * Unpack and install signalp:
         ~~~~
@@ -82,7 +82,7 @@ snakemake --conda-frontend conda --use-conda --conda-create-envs-only --cores 1
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
 
-7. Install targetp 2.0:
+8. Install TargetP 2.0:
       * Download TargetP 2.0 from https://services.healthtech.dtu.dk/software.php
       * extract the tarball and add path to targetp /bin/ folder to the PATH variable
         ~~~~
@@ -123,6 +123,19 @@ Or run snakemake manually on an LSF cluster:
 ~~~~
 snakemake --conda-frontend conda --use-conda --latency-wait 60 --jobs 10000 --cluster 'bsub -n {threads} -R "rusage[mem={params.memory}000] span[hosts=1]" -oo {log}.bsub'
 ~~~~
+
+### Running specific steps
+
+You can run specific steps of the pipeline by specifying a rule or a resulting file:
+~~~
+# run only the rules until the multiqc_before_trim rule to check quality of the input data
+./transXpress.sh multiqc_before_trim
+~~~
+
+~~~
+# run only the rules to produce samples_trimmed.txt file
+./transXpress.sh samples_trimmed.txt
+~~~
 
 ## Running tests
 ~~~~
