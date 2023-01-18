@@ -16,8 +16,8 @@ for executable in ["samtools", "bowtie2", "kallisto", "signalp6", "targetp", "Tr
     if not shutil.which(executable):
         sys.stderr.write("Warning: Cannot find %s in your PATH%s" % (executable, os.path.sep))
 
-TRINITY_EXECUTABLE_PATH=shutil.which("Trinity")
-TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))) ##Have to resolve the symbolic link that conda makes
+#TRINITY_EXECUTABLE_PATH=shutil.which("Trinity")
+#TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))) ##Have to resolve the symbolic link that conda makes
 
 # https://github.com/griffithlab/rnaseq_tutorial/wiki/Trinity-Assembly-And-Analysis
 
@@ -74,6 +74,8 @@ rule fastqc_before_trim:
     directory("fastqc_before_trim")
   log:
     "logs/fastqc_before_trim.log"
+  conda:
+    "envs/qc.yaml"
   params:
     memory="4"
   threads:
@@ -100,6 +102,8 @@ rule multiqc_before_trim:
     report="multiqc_before_trim.txt"
   log:
     "logs/multiqc_before_trim.log"
+  conda:
+    "envs/qc.yaml"
   params:
     memory="4"
   threads:
@@ -374,6 +378,8 @@ rule trimmomatic_parallel:
     "trimmomatic/completed_{job_index}"
   log:
     "logs/trimmomatic_parallel{job_index}.log"
+  conda:
+    "envs/trimmomatic.yaml"
   params:
     memory="10"
   threads:
@@ -432,6 +438,8 @@ rule fastqc_after_trim:
     directory("fastqc_after_trim")
   log:
     "logs/fastqc_after_trim.log"
+  conda:
+    "envs/qc.yaml"
   params:
     memory="4"
   threads:
@@ -458,6 +466,8 @@ rule multiqc_after_trim:
     report="multiqc_after_trim.txt"
   log:
     "logs/multiqc_after_trim.log"
+  conda:
+    "envs/qc.yaml"
   params:
     memory="4"
   threads:
@@ -621,6 +631,8 @@ rule trinity_inchworm_chrysalis:
     "trinity_out_dir/recursive_trinity.cmds"
   log:
     "logs/trinity_inchworm_chrysalis.log"
+  conda:
+    "envs/trinity_utils.yaml"
   params:
     memory="200"
   threads:
@@ -661,6 +673,8 @@ rule trinity_butterfly_parallel:
     "trinity_out_dir/parallel_jobs/completed_{job_index}"
   log:
     "logs/trinity_parallel{job_index}.log"
+  conda:
+    "envs/trinity_utils.yaml"
   params:
     memory="10"
   threads:
@@ -713,6 +727,8 @@ rule trinity_final:
     gene_trans_map="trinity_out_dir/Trinity.fasta.gene_trans_map"
   log:
     "logs/trinity_final.log"
+  conda:
+    "envs/trinity_utils.yaml"
   params:
     memory="200"
   threads:
@@ -735,6 +751,8 @@ rule rnaspades:
     gene_trans_map="rnaspades_out/transcripts.gene_trans_map"
   log:
     "logs/rnaspades.log"
+  conda:
+    "envs/rnaspades.yaml"
   params:
     memory="200"
   threads:
@@ -780,20 +798,24 @@ rule trinity_stats:
     exN50plot="ExN50_plot.pdf"
   log:
     "logs/trinity_exN50.log"
+  conda:
+    "envs/trinity_utils.yaml"
   params:
     memory="2"
   threads:
     1
   shell:
     """
+    TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
+
     assembler={config[assembler]}
     if [ "$assembler" = 'trinity' ]; then
-        {TRINITY_HOME}/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
+        $TRINITY_HOME/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
     else
-        {TRINITY_HOME}/util/TrinityStats.pl {input.transcriptome} | sed -e 's/trinity/rnaspades/g' > {output.stats} 2> {log}
+        $TRINITY_HOME/util/TrinityStats.pl {input.transcriptome} | sed -e 's/trinity/rnaspades/g' > {output.stats} 2> {log}
     fi
-    {TRINITY_HOME}/util/misc/contig_ExN50_statistic.pl {input.expression} {input.transcriptome} > {output.exN50} 2>> {log}
-    {TRINITY_HOME}/util/misc/plot_ExN50_statistic.Rscript {output.exN50} &>> {log}
+    $TRINITY_HOME/util/misc/contig_ExN50_statistic.pl {input.expression} {input.transcriptome} > {output.exN50} 2>> {log}
+    $TRINITY_HOME/util/misc/plot_ExN50_statistic.Rscript {output.exN50} &>> {log}
     """
 
 rule busco:
@@ -807,6 +829,8 @@ rule busco:
     report="busco_report.txt"
   log:
     "logs/busco.log"
+  conda:
+    "envs/busco.yaml"
   params:
     memory="2"
   threads:
@@ -843,6 +867,8 @@ rule transdecoder_longorfs:
     orfs="transcriptome.orfs"
   log:
     "logs/transdecoder_longorfs.log"
+  conda:
+    "envs/transdecoder.yaml"
   params:
     memory="2"
   threads:
@@ -868,6 +894,8 @@ rule transdecoder_predict:
     "transcriptome.pep"
   log:
     "logs/transdecoder_predict.log"
+  conda:
+    "envs/transdecoder.yaml"
   params:
     memory="2"
   threads:
@@ -893,12 +921,17 @@ checkpoint align_reads:
     "transcriptome.fasta.bowtie2.ok"
   log:
     "logs/bowtie2.log"
+  conda:
+    "envs/trinity_utils.yaml"
   params:
     memory="100"
   threads:
     16
   shell:
     """
+    TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
+
+
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
     
@@ -906,15 +939,15 @@ checkpoint align_reads:
     then
       if [[ $strand_specific = "--ss rf" ]]
       then
-        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type RF --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type RF --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &> {log}
       elif [[ $strand_specific = "--ss fr" ]]
       then
-        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type FR --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type FR --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
       else
-        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input[1]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
       fi
     else
-      {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
+      $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
     fi
     """
 
@@ -933,6 +966,8 @@ checkpoint prepare_samples_for_IGV:
     indexed_alignment="bowtie_alignments/{sample}.sorted.bam.bai"
   log:
     "logs/prepare_for_IGV_{sample}.log"
+  conda:
+    "envs/trinity_utils.yaml"
   params:
     memory="2"
   threads:
@@ -977,21 +1012,26 @@ rule trinity_DE:
     directory("edgeR_trans")
   log:
     "logs/trinity_DE.log"
+  conda:
+    "envs/trinity_utils.yaml"
   params:
     memory="2"
   threads:
     1
   shell:
     """
+    TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
+
+
     num_replicates=`awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` &> {log}
     num_samples=`awk '{{print $1}}' {input.samples} | sort | uniq | wc -l` &>> {log}
     num_replicates_minus_samples=$((num_replicates - num_samples)) &>> {log}
     if [ $num_replicates_minus_samples -gt 1 ] &>> {log}
     then &>> {log}
-	    {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} &>> {log}
+	    $TRINITY_HOME/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} &>> {log}
     else &>> {log}
 	    echo "No biological replicates to run proper differential expression analysis, last-resorting to edgeR with --dispersion 0.1" &>> {log}
-      {TRINITY_HOME}/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} --dispersion {config[dispersion]} &>> {log}
+      $TRINITY_HOME/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} --dispersion {config[dispersion]} &>> {log}
     fi &>> {log}
     """
 
@@ -1206,6 +1246,8 @@ rule rfam_parallel:
     "annotations/rfam/{index}.out"
   log:
     "logs/rfam_{index}.log"
+  conda:
+    "envs/rfam.yaml"
   params:
     memory="8" # increased memory from 2 to 8 becuase it was not sufficient
   threads:
@@ -1227,6 +1269,8 @@ rule pfam_parallel:
     "annotations/pfam/{index}.out"
   log:
     "logs/pfam_{index}.log"
+  conda:
+    "envs/pfam.yaml"
   params:
     memory="2"
   threads:
@@ -1249,6 +1293,8 @@ rule sprot_blastp_parallel:
     "annotations/sprotblastp/{index}.out"
   log:
     "logs/sprotblastp{index}.log"
+  conda:
+    "envs/blast.yaml"
   params:
     memory="4"
   threads:
@@ -1270,6 +1316,8 @@ rule sprot_blastx_parallel:
     "annotations/sprotblastx/{index}.out"
   log:
     "logs/sprotblastx_{index}.log"
+  conda:
+    "envs/blast.yaml"
   params:
     memory="4"
   threads:
@@ -1417,12 +1465,16 @@ rule kallisto:
     "kallisto.gene.counts.matrix"
   log:
     "logs/kallisto.log"
+  conda:
+    "envs/trinity_utils.yaml"
   params:
     memory="8" # increased memory from 2 to 8 since it was not sufficient
   threads:
     8
   shell:
     """
+    TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
+
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
 
@@ -1430,18 +1482,18 @@ rule kallisto:
     then
       if [[ $strand_specific = "--ss rf" ]]
       then
-        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type RF --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type RF --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       elif [[ $strand_specific = "--ss fr" ]]
       then
-        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type FR --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type FR --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       else
-        {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       fi
     else
-      {TRINITY_HOME}/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+      $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
     fi
     
-    {TRINITY_HOME}/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv &>> {log}
+    $TRINITY_HOME/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv &>> {log}
     if [ -f kallisto.isoform.TMM.EXPR.matrix ]; then
       cp -p kallisto.isoform.TMM.EXPR.matrix {output[0]} &>> {log}
     elif [ -f kallisto.isoform.TPM.not_cross_norm ]; then
@@ -1469,6 +1521,8 @@ rule download_sprot:
     "db/uniprot_sprot.fasta"
   log:
     "logs/download_sprot.log"
+  conda:
+    "envs/blast.yaml"
   params:
     memory="2"
   threads:
@@ -1489,6 +1543,8 @@ rule download_pfam:
     "db/Pfam-A.hmm"
   log:
     "logs/download_pfam.log"
+  conda:
+    "envs/pfam.yaml"
   params:
     memory="2"
   threads:
@@ -1509,6 +1565,8 @@ rule download_rfam:
     "db/Rfam.cm"
   log:
     "logs/download_rfam.log"
+  conda:
+    "envs/rfam.yaml"
   params:
     memory="2"
   threads:
