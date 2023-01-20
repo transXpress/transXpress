@@ -116,7 +116,7 @@ Use the provided script:
 
 Or run snakemake manually with 10 local threads:
 ~~~~
-snakemake --conda-frontend conda --use-conda --cores 10 --config samples_file=samples_file.txt
+snakemake --conda-frontend conda --use-conda --cores 10
 ~~~~
 
 Or run snakemake manually on an LSF cluster:
