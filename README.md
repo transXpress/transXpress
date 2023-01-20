@@ -124,6 +124,12 @@ Or run snakemake manually on an LSF cluster:
 snakemake --conda-frontend conda --use-conda --latency-wait 60 --jobs 10000 --cluster 'bsub -n {threads} -R "rusage[mem={params.memory}000] span[hosts=1]" -oo {log}.bsub'
 ~~~~
 
+Or define a profile and run snakemake with the profile:
+~~~~
+snakemake --profile profiles/ "$@"
+~~~~
+You can find example of a simple profile `config.yaml` for slurm in the `profiles` directory or [here] (https://github.com/snakemake-profiles/doc)
+
 ### Running specific steps
 
 You can run specific steps of the pipeline by specifying a rule or a resulting file:
