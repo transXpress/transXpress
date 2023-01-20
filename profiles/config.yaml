@@ -1,0 +1,33 @@
+# example profile config.yaml for slurm cluster
+# partition names will be different on different clusters
+
+cluster:
+  sbatch
+    --partition={resources.partition}
+    -n {threads}
+    --mem={params.memory}GB
+    -o {log}.slurm.out 
+    -e {log}.slurm.err 
+    --time={resources.time}
+    --parsable
+
+# specifying resources for jobs which require different resources - trinity_inchworm_chrysalis, trinity_final, rnaspades, align_reads
+set-resources:
+  - trinity_inchworm_chrysalis:partition="a36_768_long"
+  - trinity_inchworm_chrysalis:time="12:00:00"
+  - trinity_final:partition="a36_768_long"
+  - trinity_final:time="12:00:00"
+  - rnaspades:partition="a36_768_long"
+  - rnaspades:time="12:00:00"
+  - align_reads:partition="a36_192_long"
+  - align_reads:time="12:00:00"
+
+default-resources:
+  - partition="a36_any" 
+  - time="4:00:00"
+restart-times: 1
+latency-wait: 60
+jobs: 5000
+rerun-incomplete: True
+conda-frontend: "conda"
+use-conda: True
