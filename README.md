@@ -128,7 +128,7 @@ Or define a profile and run snakemake with the profile:
 ~~~~
 snakemake --profile profiles/ "$@"
 ~~~~
-You can find example of a simple profile `config.yaml` for slurm in the `profiles` directory or [here] (https://github.com/snakemake-profiles/doc)
+You can find example of a simple profile `config.yaml` for slurm in the `profiles` directory or [here](https://github.com/snakemake-profiles/doc)
 
 ### Running specific steps
 
