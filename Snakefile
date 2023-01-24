@@ -644,7 +644,8 @@ rule trinity_inchworm_chrysalis:
     16
   shell:
     """
-    Trinity --version > {log} # prints version to log
+    conda list | grep trinity > {log} # prints version to log
+    #Trinity --version > {log} # prints version to log but not commands after this are executed when run with Snakemake
     Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     """
 
@@ -741,7 +742,8 @@ rule trinity_final:
     16
   shell:
     """
-    Trinity --version > {log} # prints version to log
+    conda list | grep conda > {log} # prints conda version to log
+    #Trinity --version > {log} # prints version to log but not commands after this are executed when run with Snakemake
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     """
 
@@ -1052,7 +1054,7 @@ rule trinity_DE:
 
     # generate heatmap of differential expression
     cd {output} &>> {log}
-    {TRINITY_HOME}/Analysis/DifferentialExpression//analyze_diff_expr.pl --matrix ../{input.expression} --samples ../{input.samples} &>> ../{log}
+    $TRINITY_HOME/Analysis/DifferentialExpression//analyze_diff_expr.pl --matrix ../{input.expression} --samples ../{input.samples} &>> ../{log}
     """
 
 
@@ -1473,7 +1475,8 @@ rule targetp_parallel:
     1
   shell:
     """
-    targetp -version > {log} # print version to log
+    echo "TargetP-2.0" > {log} # print version to log
+    # targetp -version > {log} # prints version to log but not commands after this are executed when run with Snakemake
     targetp -fasta {input} -format short -org {config[targetp]} -prefix {wildcards.index} &> {log}
     mv {wildcards.index}_summary.targetp2 {output} &>> {log}
     """
