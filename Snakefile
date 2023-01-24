@@ -1035,11 +1035,11 @@ rule trinity_DE:
     1
   shell:
     """
-    conda list | grep bioconductor-edger > {log} # prints version to log
-    
+    Rscript -e 'packageVersion("edgeR")' > {log} # prints version to log
+
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
 
-    num_replicates=`awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` &> {log}
+    num_replicates=`awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` &>> {log}
     num_samples=`awk '{{print $1}}' {input.samples} | sort | uniq | wc -l` &>> {log}
     num_replicates_minus_samples=$((num_replicates - num_samples)) &>> {log}
     if [ $num_replicates_minus_samples -gt 1 ] &>> {log}
@@ -1049,6 +1049,10 @@ rule trinity_DE:
 	    echo "No biological replicates to run proper differential expression analysis, last-resorting to edgeR with --dispersion 0.1" &>> {log}
       $TRINITY_HOME/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} --dispersion {config[dispersion]} &>> {log}
     fi &>> {log}
+
+    # generate heatmap of differential expression
+    cd {output} &>> {log}
+    {TRINITY_HOME}/Analysis/DifferentialExpression//analyze_diff_expr.pl --matrix ../{input.expression} --samples ../{input.samples} &>> ../{log}
     """
 
 
@@ -1372,8 +1376,7 @@ rule tmhmm_parallel:
     # open the input file, output file and log file
     with open(input[0], "r") as input_handle, open(output[0], "a+") as output_handle, open(log[0], "a+") as log_handle:
       # print version to log
-      version = os.popen('conda list | grep tmhmm-py').read()
-      log_handle.write(version + '\n')
+      subprocess.run(['pip','show','tmhmm.py'],stdout=log_handle,stderr=log_handle)
 
       # iterate through individual sequences in input file, tmhmm.py can be executed with just one sequence at a time
       for record in Bio.SeqIO.parse(input_handle, "fasta"):
@@ -1428,6 +1431,7 @@ rule tmhmm_parallel:
         os.remove(summary_file)
         os.remove(annotation_file)
         os.remove(plot_file)
+        os.remove(fasta_file)
 
 rule signalp_parallel:
   """
