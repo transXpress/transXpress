@@ -1,0 +1,21 @@
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+dependencies:
+  - snakemake>=3.9.0
+  - python>=3.8
+  - pip
+  - biopython
+  - seqkit 
+  - wget 
+  - sra-tools
+  - blast=2.10
+  - gcc
+  - pip:
+    - matplotlib>3.3.2
+    - numpy==1.22.3
+    - torch>1.7.0
+    - tqdm>4.46.1
+    - tmhmm.py
