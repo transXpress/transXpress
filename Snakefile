@@ -14,7 +14,7 @@ configfile: "config.yaml"
 
 for executable in ["samtools", "bowtie2", "kallisto", "signalp6", "targetp", "Trinity", "blastx", "blastp", "makeblastdb", "cmscan", "hmmscan", "fastqc", "rnaspades.py", "seqkit", "R"]:
     if not shutil.which(executable):
-        sys.stderr.write("Warning: Cannot find %s in your PATH%s" % (executable, os.path.sep))
+        sys.stderr.write("Warning: Cannot find %s in your PATH\n" % (executable))
 
 #TRINITY_EXECUTABLE_PATH=shutil.which("Trinity")
 #TRINITY_HOME=os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))) ##Have to resolve the symbolic link that conda makes
