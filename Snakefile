@@ -248,7 +248,7 @@ Any library where a reasonable proportion of the insert sizes are shorter than t
 
 
     with open(output["warning_file"], "w") as out_file:
-      df1 = pd.read_csv('multiqc_before_trim.txt', sep='\t')
+      df1 = pd.read_csv(input["fastqc_report"], sep='\t')
       df1 = df1.set_index('Sample')
 
       # filter only columns containing 'pass','warn' or 'fail'
@@ -431,69 +431,44 @@ rule compare_qc_after_trim:
     "logs/compare_qc_after_trim.log"
   run:
 
-    # map name of the module to corresponding variable prefix
     mapping = {
-      "PER BASE SEQUENCE QUALITY": "per_base_sequence_quality",
-      "PER SEQUENCE QUALITY SCORES": "per_sequence_quality_scores",
-      "OVERREPRESENTED SEQUENCES": "overrepresented_sequences",
-      "ADAPTER CONTENT": "adapter_content"
+      "per_base_sequence_quality": "PER BASE SEQUENCE QUALITY",
+      "per_sequence_quality_scores": "PER SEQUENCE QUALITY SCORES",
+      "overrepresented_sequences": "OVERREPRESENTED SEQUENCES",
+      "adapter_content": "ADAPTER CONTENT"
     }
 
-    # compares pass, warn, fail counts before and after trimming for a given module and writes the result to the output file
     def compare_module(module_name, before_trim, after_trim, out_file):
+      module_name = mapping[module_name]
       out_file.writelines(f"""**{module_name}**
-      Before trimming:
-      pass: {str(before_trim.count('pass'))} out of {str(len(before_trim))} ({str(before_trim.count('pass')/len(before_trim)*100)}%)
-      warn: {str(before_trim.count('warn'))} out of {str(len(before_trim))} ({str(before_trim.count('warn')/len(before_trim)*100)}%)
-      fail: {str(before_trim.count('fail'))} out of {str(len(before_trim))} ({str(before_trim.count('fail')/len(before_trim)*100)}%)
+Before trimming:
+pass: {str(before_trim.count('pass'))} out of {str(len(before_trim))} ({str(before_trim.count('pass')/len(before_trim)*100)}%)
+warn: {str(before_trim.count('warn'))} out of {str(len(before_trim))} ({str(before_trim.count('warn')/len(before_trim)*100)}%)
+fail: {str(before_trim.count('fail'))} out of {str(len(before_trim))} ({str(before_trim.count('fail')/len(before_trim)*100)}%)
       
-      After trimming:
-      pass: {str(after_trim.count('pass'))} out of {str(len(after_trim))} ({str(after_trim.count('pass')/len(after_trim)*100)}%)
-      warn: {str(after_trim.count('warn'))} out of {str(len(after_trim))} ({str(after_trim.count('warn')/len(after_trim)*100)}%)
-      fail: {str(after_trim.count('fail'))} out of {str(len(after_trim))} ({str(after_trim.count('fail')/len(after_trim)*100)}%)
-      {'-' * 50}
-      """)
-    
-    # reads the file with fastqc results and returns a list of pass, warn, fail values of the input files for relevant modules
-    def load_data(file_name):
-      with open(file_name, 'r') as in_handle:
-        data = [line.strip() for line in in_handle.readlines()[1:]] # skip header
+After trimming:
+pass: {str(after_trim.count('pass'))} out of {str(len(after_trim))} ({str(after_trim.count('pass')/len(after_trim)*100)}%)
+warn: {str(after_trim.count('warn'))} out of {str(len(after_trim))} ({str(after_trim.count('warn')/len(after_trim)*100)}%)
+fail: {str(after_trim.count('fail'))} out of {str(len(after_trim))} ({str(after_trim.count('fail')/len(after_trim)*100)}%)
+{'-' * 50}
+""")
 
-        per_base_sequence_quality_list = []
-        per_sequence_quality_scores_list = []
-        overrepresented_sequences_list = []
-        adapter_content_list = []
+    before = pd.read_csv(input["before"], sep='\t')
+    before = before.set_index('Sample')
 
-        for line in data:
-          # per-tile module not present in report
-          if len(line.split("\t")[10:]) == 10:
-            basic_statistics, per_base_sequence_quality, per_sequence_quality_scores, per_base_sequence_content, per_sequence_gc_content, per_base_n_content, sequence_length_distribution, sequence_duplication_levels, overrepresented_sequences, adapter_content = line.split("\t")[10:]
-            per_tile_sequence_quality = ""
-          # per-tile module present in report
-          else:
-            basic_statistics, per_base_sequence_quality, per_tile_sequence_quality, per_sequence_quality_scores, per_base_sequence_content, per_sequence_gc_content, per_base_n_content, sequence_length_distribution, sequence_duplication_levels, overrepresented_sequences, adapter_content = line.split("\t")[10:]
-          per_base_sequence_quality_list.append(per_base_sequence_quality)
-          per_sequence_quality_scores_list.append(per_sequence_quality_scores)
-          overrepresented_sequences_list.append(overrepresented_sequences)
-          adapter_content_list.append(adapter_content)
+    after = pd.read_csv(input["after"], sep='\t')
+    after = after.set_index('Sample')
 
-      return per_base_sequence_quality_list, per_sequence_quality_scores_list, overrepresented_sequences_list, adapter_content_list
+    modules = ['per_base_sequence_quality', 'per_sequence_quality_scores', 'overrepresented_sequences', 'adapter_content']
 
-    # get lists of pass/warn/fail values of relevant modules before trimming
-    per_base_sequence_quality_list, per_sequence_quality_scores_list, overrepresented_sequences_list, adapter_content_list = load_data(input["before"])
-
-    # get lists of pass/warn/fail values of relevant modules after trimming
-    per_base_sequence_quality_list_after, per_sequence_quality_scores_list_after, overrepresented_sequences_list_after, adapter_content_list_after = load_data(input["after"])
-
-    # compare the results and write to the output file
     with open(output["result"], "w") as out_file:
-        
       out_file.write("FASTQC COMPARISON BEFORE AND AFTER TRIMMING\n")
       out_file.write('-' * 50 + '\n')
 
-      modules = ["PER BASE SEQUENCE QUALITY", "PER SEQUENCE QUALITY SCORES", "OVERREPRESENTED SEQUENCES", "ADAPTER CONTENT"]
       for module in modules:
-        compare_module(module, eval(mapping[module] + "_list"), eval(mapping[module] + "_list_after"), out_file)
+        before_list = before[module].tolist()
+        after_list = after[module].tolist()
+        compare_module(module, before_list, after_list, out_file)
 
     # print the results also in the terminal
     with open(output["result"], "r") as out_file:

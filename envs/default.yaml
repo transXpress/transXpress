@@ -19,3 +19,4 @@ dependencies:
     - torch>1.7.0
     - tqdm>4.46.1
     - tmhmm.py
+    - pandas
