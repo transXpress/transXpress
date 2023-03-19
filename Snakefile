@@ -832,7 +832,7 @@ rule busco:
   conda:
     "envs/busco.yaml"
   params:
-    memory="2"
+    memory="10"
   threads:
     4
   shell:
@@ -897,7 +897,7 @@ rule transdecoder_predict:
   conda:
     "envs/transdecoder.yaml"
   params:
-    memory="2"
+    memory="10"
   threads:
     1
   shell:
@@ -1468,7 +1468,7 @@ rule kallisto:
   conda:
     "envs/trinity_utils.yaml"
   params:
-    memory="8" # increased memory from 2 to 8 since it was not sufficient
+    memory="16" # increased memory from 2 to 8 since it was not sufficient
   threads:
     8
   shell:
