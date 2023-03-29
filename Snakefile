@@ -632,8 +632,8 @@ rule trinity_final:
     cmds_completed="trinity_out_dir/recursive_trinity.cmds.completed",
     samples="samples_trimmed.txt"
   output:
-    transcriptome="trinity_out_dir/Trinity.fasta",
-    gene_trans_map="trinity_out_dir/Trinity.fasta.gene_trans_map"
+    transcriptome="trinity_out_dir.Trinity.fasta", #new output files live in base directory now, not trinity_out_dir.
+    gene_trans_map="trinity_out_dir.Trinity.fasta.gene_trans_map" #according to trinity dev, this is a feature, not a bug
   log:
     "logs/trinity_final.log"
   conda:
@@ -684,12 +684,18 @@ rule transcriptome_copy:
   output:
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map"
+    #create copies the same way older Trinity versions did, for parity, in case other dependencies on that path exist?
+    redundant_transcriptome="trinity_out_dir/Trinity.fasta"
+    redundant_gene_trans_map="trinity_out_dir/Trinity.fasta.gene_trans_map"
   log:
     "logs/transcriptome_copy.log"
   shell:
     """
     cp -p {input.transcriptome} {output.transcriptome} &> {log}
     cp -p {input.gene_trans_map} {output.gene_trans_map} &>> {log}
+    #create copies the same way older Trinity versions did, for parity, in case other dependencies on that path exist?
+    cp -p {input.transcriptome} {output.redundant_transcriptome} &> {log}
+    cp -p {input.gene_trans_map} {output.redundant_gene_trans_map} &>> {log}
     """
 
 
