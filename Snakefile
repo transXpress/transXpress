@@ -683,9 +683,9 @@ rule transcriptome_copy:
     gene_trans_map=rules.rnaspades.output.gene_trans_map if config["assembler"]=="rnaspades" else rules.trinity_final.output.gene_trans_map,
   output:
     transcriptome="transcriptome.fasta",
-    gene_trans_map="transcriptome.gene_trans_map"
+    gene_trans_map="transcriptome.gene_trans_map",
     #create copies the same way older Trinity versions did, for parity, in case other dependencies on that path exist?
-    redundant_transcriptome="trinity_out_dir/Trinity.fasta"
+    redundant_transcriptome="trinity_out_dir/Trinity.fasta",
     redundant_gene_trans_map="trinity_out_dir/Trinity.fasta.gene_trans_map"
   log:
     "logs/transcriptome_copy.log"
