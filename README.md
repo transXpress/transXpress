@@ -66,13 +66,14 @@ conda env update --file envs/default.yaml
 ~~~~
 * (TIP: if you have a problem updating the default environment try putting python 3.9 into the *defaults.yaml* file)
 
+
 6. Create a tab-separated file called *samples.txt* in the assembly directory describing where to find your raw read FASTQ files. Create this file with the following contents:
-  ~~~
-  cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
-  cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
-  cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
-  cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
-  ~~~
+      ~~~
+      cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
+      cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
+      cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
+      cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
+      ~~~
     
 
 * You can download reads from SRA with provided script:
@@ -82,8 +83,10 @@ conda env update --file envs/default.yaml
     where SRR0000000 is an SRA readset ID. E.g., SRR3883773
 
 * See the tests directory for an example of a samples file: [test_samples.txt](./tests/test_samples.txt)
+
     
 7. Take a look at the configuration file *config.yaml* and update as required (you should check: **assembler, targetp, signalp, strand_specific, lineage**).
+
 
 8. Setup other conda environments (This will take a while):
 ~~~~
@@ -114,22 +117,22 @@ snakemake --conda-frontend conda --use-conda --conda-create-envs-only --cores 1
 
 There are several options on how to run transXpress
 
-Option 1: use the provided script:
+Option 1 - use the provided script:
 ~~~~
 ./transXpress.sh
 ~~~~
 
-Option 2: run snakemake manually with 10 local threads:
+Option 2 - run snakemake manually with 10 local threads:
 ~~~~
 snakemake --conda-frontend conda --use-conda --cores 10
 ~~~~
 
-Option 3: run snakemake manually on an LSF cluster:
+Option 3 - run snakemake manually on an LSF cluster:
 ~~~~
 snakemake --conda-frontend conda --use-conda --latency-wait 60 --jobs 10000 --cluster 'bsub -n {threads} -R "rusage[mem={params.memory}000] span[hosts=1]" -oo {log}.bsub'
 ~~~~
 
-Option 4: define a profile and run snakemake with the profile:
+Option 4 - define a profile and run snakemake with the profile:
 ~~~~
 snakemake --profile profiles/ "$@"
 ~~~~
@@ -211,5 +214,3 @@ See https://snakemake.readthedocs.io/en/stable/tutorial/additional_features.html
 Alternatively, you can use snakemake [profiles](https://github.com/Snakemake-Profiles/doc) which also contain status checking script. 
 
 See https://snakemake.readthedocs.io/en/v5.1.4/executable.html#profiles 
-
-
