@@ -64,24 +64,24 @@ conda config --add channels conda-forge
 conda config --set channel_priority false
 conda env update --file envs/default.yaml
 ~~~~
-(TIP: if you have a problem updating the default environment try putting python 3.9 into the *defaults.yaml* file)
+* (TIP: if you have a problem updating the default environment try putting python 3.9 into the *defaults.yaml* file)
 
-6. Create a tab-separated file called *samples.txt* in the assembly directory describing where to find your raw read FASTQ files. 
-
-You can download reads from SRA with provided script:
-~~~~
-./sra_download.sh <SRR0000000> <SRR0000001> <...>
-~~~~
-where SRR0000000 is an SRA readset ID. E.g., SRR3883773
-
-See the tests directory for an example of a samples file: [samples.txt](./tests/test_samples.txt)
+6. Create a tab-separated file called *samples.txt* in the assembly directory describing where to find your raw read FASTQ files. Create this file with the following contents:
 ~~~
-cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
-cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
-cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
-cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
-~~~
+    cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
+    cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
+    cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
+    cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
+    ~~~ 
 
+* You can download reads from SRA with provided script:
+    ~~~~
+    ./sra_download.sh <SRR0000000> <SRR0000001> <...>
+    ~~~~
+    where SRR0000000 is an SRA readset ID. E.g., SRR3883773
+
+* See the tests directory for an example of a samples file: [test_samples.txt](./tests/test_samples.txt)
+    
 7. Take a look at the configuration file *config.yaml* and update as required (you should check: **assembler, targetp, signalp, strand_specific, lineage**).
 
 8. Setup other conda environments (This will take a while):
@@ -141,19 +141,16 @@ You can run specific steps of the pipeline by specifying a rule or a resulting f
 # run only the rules until the multiqc_before_trim rule to check quality of the input data
 ./transXpress.sh multiqc_before_trim
 ~~~
-
-or when using profiles:
-~~~
-# run only the rules until the multiqc_before_trim rule to check quality of the input data
-snakemake multiqc_before_trim --profile profiles/ "$@"
-~~~
-
 ~~~
 # run only the rules to produce samples_trimmed.txt file
 ./transXpress.sh samples_trimmed.txt
 ~~~
 
 or when using profiles:
+~~~
+# run only the rules until the multiqc_before_trim rule to check quality of the input data
+snakemake multiqc_before_trim --profile profiles/ "$@"
+~~~
 ~~~
 # run only the rules to produce samples_trimmed.txt file
 snakemake samples_trimmed.txt --profile profiles/ "$@"
