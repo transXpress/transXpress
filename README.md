@@ -35,7 +35,7 @@ transXpress requires:
 * tmhmm.py (install via pip, `envs/default.yaml`)
 * basic Linux utitilies: split, awk, cut, gzip
 
-The conda dependencies are installed in smaller conda environments automatically by transXpress (based on yaml files in the `envs` directory). 
+The conda dependencies are installed in smaller conda environments automatically by transXpress (based on yaml files in the `envs` directory).
 
 ## Installation
 
@@ -45,6 +45,13 @@ git clone https://github.com/transXpress/transXpress.git
 ~~~~
 
 2. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
+~~~~
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm -rf ~/miniconda3/miniconda.sh
+~/miniconda3/bin/conda init bash
+~~~~
 
 3. To ensure correct versions of R packages will be used unset R_LIBS_SITE
 ~~~~
@@ -53,11 +60,13 @@ unset R_LIBS_SITE
 
 4. Setup main transXpress conda environment:
 ~~~~
+conda install -n base conda-libmamba-solver
 conda create --name transxpress
 conda activate transxpress
+conda config --set solver libmamba
 ~~~~
 
-5. Install snakemake and other dependencies in the main transXpress conda environment:  
+5. Install snakemake and other dependencies in the main transXpress conda environment:
 ~~~~
 conda config --add channels bioconda
 conda config --add channels conda-forge
@@ -94,10 +103,10 @@ snakemake --conda-frontend conda --use-conda --conda-create-envs-only --cores 1
 
 Create a tab-separated file called *samples.txt* with the following contents:
 ~~~
-cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
-cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
-cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
-cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
+cond_A	cond_A_rep1	A_rep1_left.fq	A_rep1_right.fq
+cond_A	cond_A_rep2	A_rep2_left.fq	A_rep2_right.fq
+cond_B	cond_B_rep1	B_rep1_left.fq	B_rep1_right.fq
+cond_B	cond_B_rep2	B_rep2_left.fq	B_rep2_right.fq
 ~~~
 
 Also take a look at the configuration file *config.yaml* and update as required.
@@ -158,7 +167,7 @@ If you want to align reads to the transcriptome assembly and visualize the resul
 
 Then you can load your transcriptome file to IGV: Genomes -> Load Genome from File -> select the file *transcriptome.fasta*
 
-Your sorted .bam files will be in the bowtie_alignments folder: 
+Your sorted .bam files will be in the bowtie_alignments folder:
 ~~~~
 bowtie_alignments/{sample}.sorted.bam
 bowtie_alignments/{sample}.sorted.bam.bai
@@ -185,17 +194,17 @@ to
 ~~~~
 snakemake --conda-frontend conda --use-conda --latency-wait 60 --restart-times 1 --jobs 10000 --cluster "sbatch -o {log}.slurm.out -e {log}.slurm.err -n {threads} --mem {params.memory} --time=06:00:00" "$@"
 ~~~~
-This sets time limit to 6 hours. You may have to use different time limit based on size of reads used for assembly. 
+This sets time limit to 6 hours. You may have to use different time limit based on size of reads used for assembly.
 
 See https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Computing-Requirements
 
 ### Pipeline hangs when cluster cancels the job
-It is possible that cluster cancels the job, but pipeline seems to be still running. This can happen because the pipeline does not receive information whether cluster job completed successfully, failed or is still running. You can add `--cluster-status` option and add script which detects the job status. 
+It is possible that cluster cancels the job, but pipeline seems to be still running. This can happen because the pipeline does not receive information whether cluster job completed successfully, failed or is still running. You can add `--cluster-status` option and add script which detects the job status.
 
 See https://snakemake.readthedocs.io/en/stable/tutorial/additional_features.html#using-cluster-status
 
-Alternatively, you can use snakemake [profiles](https://github.com/Snakemake-Profiles/doc) which also contain status checking script. 
+Alternatively, you can use snakemake [profiles](https://github.com/Snakemake-Profiles/doc) which also contain status checking script.
 
-See https://snakemake.readthedocs.io/en/v5.1.4/executable.html#profiles 
+See https://snakemake.readthedocs.io/en/v5.1.4/executable.html#profiles
 
 
