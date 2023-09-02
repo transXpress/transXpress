@@ -61,6 +61,7 @@ unset R_LIBS_SITE
 mamba activate base
 mamba create -c conda-forge -c bioconda --name transxpress
 mamba activate transxpress
+conda config --set channel_priority disabled
 mamba env update --file envs/default.yaml
 ~~~~
 
