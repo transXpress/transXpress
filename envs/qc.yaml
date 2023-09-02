@@ -1,3 +1,5 @@
+solver:
+  - libmamba
 channels:
   - conda-forge
   - bioconda
