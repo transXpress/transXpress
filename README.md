@@ -44,13 +44,11 @@ The conda dependencies are installed in smaller conda environments automatically
 git clone https://github.com/transXpress/transXpress.git
 ~~~~
 
-2. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
+2. Install [Mambaforge](https://github.com/conda-forge/miniforge#mambaforge)
 ~~~~
-mkdir -p ~/miniconda3
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
-bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
-rm -rf ~/miniconda3/miniconda.sh
-~/miniconda3/bin/conda init bash
+curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh"
+bash Mambaforge-$(uname)-$(uname -m).sh
+rm Mambaforge-$(uname)-$(uname -m).sh
 ~~~~
 
 3. To ensure correct versions of R packages will be used unset R_LIBS_SITE
@@ -60,23 +58,15 @@ unset R_LIBS_SITE
 
 4. Setup main transXpress conda environment:
 ~~~~
-conda install -n base conda-libmamba-solver
-conda create --name transxpress
-conda activate transxpress
-conda config --set solver libmamba
-~~~~
-
-5. Install snakemake and other dependencies in the main transXpress conda environment:
-~~~~
-conda config --add channels bioconda
-conda config --add channels conda-forge
-conda config --set channel_priority false
-conda env update --file envs/default.yaml
+mamba activate base
+mamba create -c conda-forge -c bioconda --name transxpress
+mamba activate transxpress
+mamba env update --file envs/default.yaml
 ~~~~
 
 6. Setup other conda environments (This will take a while):
 ~~~~
-snakemake --conda-frontend conda --use-conda --conda-create-envs-only --cores 1
+snakemake --use-conda --conda-frontend mamba --conda-create-envs-only --cores 10
 ~~~~
 
 7. Install SignalP 6.0 (fast):
@@ -125,7 +115,7 @@ Use the provided script:
 
 Or run snakemake manually with 10 local threads:
 ~~~~
-snakemake --conda-frontend conda --use-conda --cores 10
+snakemake --conda-frontend conda --use-conda
 ~~~~
 
 Or run snakemake manually on an LSF cluster:
