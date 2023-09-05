@@ -46,9 +46,9 @@ git clone https://github.com/transXpress/transXpress.git
 
 2. Install [Mambaforge](https://github.com/conda-forge/miniforge#mambaforge)
 ~~~~
-curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh"
-bash Mambaforge-$(uname)-$(uname -m).sh
-rm Mambaforge-$(uname)-$(uname -m).sh
+curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh"
+bash Mambaforge-Linux-x86_64.sh
+rm Mambaforge-Linux-x86_64.sh
 ~~~~
 
 3. To ensure correct versions of R packages will be used unset R_LIBS_SITE
