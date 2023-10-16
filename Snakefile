@@ -792,7 +792,7 @@ rule transdecoder_longorfs:
     """
     rm -rf {input.transcriptome}.transdecoder_dir &> {log}
     TransDecoder.LongOrfs -t {input.transcriptome} --output_dir transdecoder &>> {log} 
-    cp -p transdecoder/longest_orfs.pep {output.orfs} &>> {log}
+    cp -p transdecoder/{input.transcriptome}.transdecoder_dir/longest_orfs.pep {output.orfs} &>> {log}
     """
 
 
