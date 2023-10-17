@@ -818,7 +818,7 @@ rule transdecoder_predict:
   shell:
     """
     TransDecoder.Predict -t {input.transcriptome} --output_dir transdecoder --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
-    cp -p {input.transcriptome}.transdecoder.pep {output} &>> {log}
+    cp -p transdecoder/{input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
 
 
