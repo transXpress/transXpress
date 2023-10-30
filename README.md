@@ -44,7 +44,12 @@ The conda dependencies are installed in smaller conda environments automatically
 git clone https://github.com/transXpress/transXpress.git
 ~~~~
 
-2. Install [Miniconda3](https://conda.io/en/latest/miniconda.html)
+2. Install [Mambaforge](https://github.com/conda-forge/miniforge#mambaforge)
+~~~~
+curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh"
+bash Mambaforge-Linux-x86_64.sh
+rm Mambaforge-Linux-x86_64.sh
+~~~~
 
 3. To ensure correct versions of R packages will be used unset R_LIBS_SITE
 ~~~~
@@ -53,26 +58,21 @@ unset R_LIBS_SITE
 
 4. Setup main transXpress conda environment:
 ~~~~
-conda create --name transxpress
-conda activate transxpress
-~~~~
-
-5. Install snakemake and other dependencies in the main transXpress conda environment:  
-~~~~
-conda config --add channels bioconda
-conda config --add channels conda-forge
-conda config --set channel_priority false
-conda env update --file envs/default.yaml
+mamba activate base
+mamba create -c conda-forge -c bioconda --name transxpress
+mamba activate transxpress
+conda config --set channel_priority disabled
+mamba env update --file envs/default.yaml
 ~~~~
 * (TIP: if you have a problem updating the default environment try putting python 3.9 into the *defaults.yaml* file)
 
 
 6. Create a tab-separated file called *samples.txt* in the assembly directory describing where to find your raw read FASTQ files. Create this file with the following contents:
       ~~~
-      cond_A    cond_A_rep1    A_rep1_left.fq    A_rep1_right.fq
-      cond_A    cond_A_rep2    A_rep2_left.fq    A_rep2_right.fq
-      cond_B    cond_B_rep1    B_rep1_left.fq    B_rep1_right.fq
-      cond_B    cond_B_rep2    B_rep2_left.fq    B_rep2_right.fq
+      cond_A      cond_A_rep1 A_rep1_left.fq    A_rep1_right.fq
+      cond_A      cond_A_rep2 A_rep2_left.fq    A_rep2_right.fq
+      cond_B      cond_B_rep1 B_rep1_left.fq    B_rep1_right.fq
+      cond_B      cond_B_rep2 B_rep2_left.fq    B_rep2_right.fq
       ~~~
     
 
@@ -90,7 +90,7 @@ conda env update --file envs/default.yaml
 
 8. Setup other conda environments (This will take a while):
 ~~~~
-snakemake --conda-frontend conda --use-conda --conda-create-envs-only --cores 1
+snakemake --use-conda --conda-frontend mamba --conda-create-envs-only --cores 10
 ~~~~
 
 9. Install SignalP 6.0 (fast):
