@@ -15,8 +15,8 @@ dependencies:
   - gcc
   - pip:
     - matplotlib>3.3.2
-    - numpy==1.22.3
-    - torch>1.7.0
+    - numpy==1.23.2
+    - torch>1.7.0,<2.0
     - tqdm>4.46.1
     - tmhmm.py
     - pandas
