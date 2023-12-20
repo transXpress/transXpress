@@ -5,7 +5,7 @@ channels:
   - defaults
 dependencies:
   - snakemake>=3.9.0
-  - python>=3.8
+  - python>=3.8,<3.12
   - pip
   - biopython
   - seqkit 
@@ -15,8 +15,5 @@ dependencies:
   - gcc
   - pip:
     - matplotlib>3.3.2
-    - numpy==1.23.2
-    - torch>1.7.0,<2.0
     - tqdm>4.46.1
-    - tmhmm.py
     - pandas
