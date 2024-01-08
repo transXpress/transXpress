@@ -1331,8 +1331,6 @@ rule signalp_parallel:
     "annotations/signalp/{index}.out"
   log:
     "logs/signalp_{index}.log"
-  conda:
-    "envs/signalp.yaml"
   params:
     memory="8"
   threads:

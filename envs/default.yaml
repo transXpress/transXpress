@@ -15,5 +15,4 @@ dependencies:
   - gcc
   - pip:
     - matplotlib>3.3.2
-    - tqdm>4.46.1
     - pandas
