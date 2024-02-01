@@ -1,0 +1,10 @@
+name: signalp
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+dependencies:
+  - python>=3.8,<3.12
+  - pip
+  - biopython

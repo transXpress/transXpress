@@ -1331,6 +1331,8 @@ rule signalp_parallel:
     "annotations/signalp/{index}.out"
   log:
     "logs/signalp_{index}.log"
+  conda:
+    "signalp"
   params:
     memory="8"
   threads:
@@ -1354,6 +1356,8 @@ rule targetp_parallel:
     "annotations/targetp/{index}.out"
   log:
     "logs/targetp_{index}.log"
+  conda:
+    "targetp"
   params:
     memory="2"
   threads:

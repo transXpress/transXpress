@@ -97,11 +97,14 @@ snakemake --use-conda --conda-frontend mamba --conda-create-envs-only --cores 10
       * Download SignalP 6.0 fast from https://services.healthtech.dtu.dk/services/SignalP-6.0/ (go to Downloads)
       * Unpack and install signalp:
         ~~~~
+         mamba env create -f envs/signalp.yaml
+         mamba activate signalp
          tar zxvf signalp-6.0h.fast.tar.gz
          cd signalp6_fast
          pip install signalp-6-package/
          SIGNALP_DIR=$(python -c "import signalp; import os; print(os.path.dirname(signalp.__file__))" )
          cp -r signalp-6-package/models/* $SIGNALP_DIR/model_weights/
+         mamba deactivate
         ~~~~
         (make sure the conda python is used, or use the full path to python from your conda installation)
 
@@ -109,8 +112,11 @@ snakemake --use-conda --conda-frontend mamba --conda-create-envs-only --cores 10
       * Download TargetP 2.0 from https://services.healthtech.dtu.dk/software.php
       * extract the tarball and add path to targetp /bin/ folder to the PATH variable
         ~~~~
+         mamba env create -f envs/targetp.yaml
+         mamba activate targetp
          tar zxvf targetp-2.0.Linux.tar.gz
          export PATH=$PATH:`pwd`/targetp-2.0/bin
+         mamba deactivate
         ~~~~
 
 ## Running transXpress
