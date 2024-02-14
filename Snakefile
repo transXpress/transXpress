@@ -50,7 +50,8 @@ rule all:
     "multiqc_after_trim.txt",
     "WARNING_fastqc_before_trim_overview.txt",
     "FastQC_comparison_after_trim.txt",
-    "edgeR_trans"
+    "edgeR_trans",
+    ##"clusters.tsv" - can only uncomment if CD-HIT option is set to true in the config.yaml file
 
 rule clean:
   """
@@ -1664,7 +1665,9 @@ rule annotated_fasta:
   """
   input:
     transcriptome="transcriptome.fasta",
+    clustered_transcriptome="transcriptome_clst.fasta",
     proteome="transcriptome.pep",
+    clustered_proteome="transcriptome_clst.pep",
     expression="transcriptome_expression_isoform.tsv",
     blastx_results="annotations/sprotblastx_fasta.out",
     rfam_results="annotations/rfam_fasta.out",
@@ -1695,6 +1698,12 @@ rule annotated_fasta:
       tmhmm_annotations = {}
       signalp_annotations = {}
       targetp_annotations = {}
+
+      cd_hit_performed = config["cd-hit"]
+      if cd_hit_performed == "true":
+        cd_hit_performed = True
+      else:
+        cd_hit_performed = False
   
       ## Load kallisto results
       print ("Loading expression values from", input["expression"], file=log_handle)
@@ -1789,7 +1798,11 @@ rule annotated_fasta:
       
       ## Do the work
       print ("Annotating FASTA file", input["transcriptome"], "to", output["transcriptome_annotated"], file=log_handle)
-      with open(input["transcriptome"], "r") as input_fasta_handle, open(output["transcriptome_annotated"], "w") as output_fasta_handle:
+      if cd_hit_performed:
+        input_transcriptome = input["clustered_transcriptome"]
+      else:
+        input_transcriptome = input["transcriptome"]
+      with open(input["input_transcriptome"], "r") as input_fasta_handle, open(output["transcriptome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = record.id
           record.description = "TPM: " + expression_annotations.get(transcript_id)
@@ -1800,7 +1813,11 @@ rule annotated_fasta:
           Bio.SeqIO.write(record, output_fasta_handle, "fasta")
       
       print ("Annotating FASTA file", input["proteome"], "to", output["proteome_annotated"], file=log_handle)
-      with open(input["proteome"], "r") as input_fasta_handle, open(output["proteome_annotated"], "w") as output_fasta_handle:
+      if cd_hit_performed:
+        input_proteome = input["clustered_proteome"]
+      else:
+        input_proteome = input["proteome"]
+      with open(input_proteome, "r") as input_fasta_handle, open(output["proteome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = re.sub("\\.p[0-9]+$", "", record.id)
           record.description = "transdecoder: " + re.search("ORF type:([^,]+,score=[^,]+)", record.description).group(1)
