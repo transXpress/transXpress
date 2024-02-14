@@ -30,10 +30,11 @@ rule all:
   """
   List of target files of the transxpress pipeline.
   """
-  input:
+  input: 
     "samples_trimmed.txt",
     "transcriptome.fasta",
     "transcriptome.pep",
+    "transcriptome_clst.fasta",
     "transcriptome_stats.txt",
     "ExN50_plot.pdf",
     "transcriptome_annotated.fasta",
@@ -821,6 +822,141 @@ rule transdecoder_predict:
     cp -p transdecoder/{input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
 
+rule cd_hit:
+  """
+  (optional)
+  Apply CD-HIT on transcriptome.pep to get rid of redundant sequences (saves space and time complexity). CD-HIT reduces space by clustering 100% identical 
+  sequences into one representative sequence. If config[cd-hit] is set to False, we just copy the input file into the output file.
+  output are two files: a fasta file of representative sequences and a text file of list of clusters
+  """
+  input:
+    "transcriptome.pep"
+  output:
+    "transcriptome_clst.pep"
+  log:
+    "logs/cd_hit.log"
+  conda:
+    "envs/cdhit.yaml"
+  params:
+    memory="8"
+  threads:
+    1
+  shell:
+    """
+    if [ {config[cd-hit]} = 'true' ]; then
+      cd-hit -i {input} -o {output} -c 1.00 -n 5 -g 1 -d 0 &>> {log}
+    else
+      cp {input} {output}
+    fi
+    """
+  
+rule parse_cdhit:
+  """
+  Parse the CD-HIT output.
+  """
+  input:
+    clustered="transcriptome_clst.pep.clstr" # if cd-hit is not run by the pipeline this file will be missing, but this rule can only be run if the user wishes to have the tsv file in the outputs of the pipeline
+  output:
+    tsv="clusters.tsv"
+  log:
+    "logs/parse_cdhit.log"
+  threads:
+    1
+  run:
+    cl_size = 0          
+    clstr_cl_size = ""  
+    this_cluster = []    
+
+    def process_this_cluster(this_cluster, output):
+      t = sorted(this_cluster, key=lambda x: (x[2], x[1]), reverse=True)
+      longest = 0
+      for i in t:
+        if i[2]:
+          longest = i[1]
+      for i in t:
+        if i[1] is None:
+          continue
+        else:
+          cov = int(i[1] / longest * 100) 
+        print(f"{i[0]}\t{clstr_cl_size}\t{cl_size}\t{i[1]}\t{i[2]}\t{i[3]}\t{cov}%", file=output)
+
+    with open(output["tsv"], "w") as output_file:
+      print("id\tclstr\tclstr_size\tlength\tclstr_rep\tclstr_iden\tclstr_cov", file=output_file)  
+      for line in open(input["clustered"]):
+        if line.startswith('>'):
+          if cl_size > 0:
+            process_this_cluster(this_cluster, output_file) 
+          if line.startswith('>Cluster '):
+            clstr_cl_size = line.split()[1]  
+          cl_size = 0
+          this_cluster = []
+        else:
+          id, len, rep, iden = None, None, None, None
+          match = re.match(r'\d+\t(\d+)[a-z]{2}, >NODE_\d+_length_\d+_cov_\d+\.\d+_(g\d+_i\d+\.p\d+)', line)
+          if match:
+            len = int(match.group(1))
+            id = match.group(2)
+            rep = 1   
+            iden = 100 
+          elif re.match(r'\d+\t(\d+)[a-z]{2}, >(.+)\.\.\.', line):
+            match = re.match(r'\d+\t(\d+)[a-z]{2}, >(.+)\.\.\.', line)
+            len = int(match.group(1))
+            id = match.group(2)
+            rep = 0  
+            match = re.search(r'(\d+%|\d+\.\d+%)$', line)
+            iden = match.group(1)
+          else:
+            print("***********")
+          this_cluster.append((id, len, rep, iden))
+          cl_size += 1
+
+      if cl_size > 0:
+        process_this_cluster(this_cluster, output_file)
+
+
+rule reduce_transcriptome: 
+  """
+  Combines output of CD-HIT and the transcriptome.fasta file to a clustered transcriptome_clst.fasta file. Output will be a reduced 
+  transcriptome which will be used as the input for kallisto.
+  """
+  input:
+    clustered_proteome="transcriptome_clst.pep",
+    transcriptome_path="transcriptome.fasta"
+  output:
+    transcriptome_reduced="transcriptome_clst.fasta"
+  log:
+    "logs/transcriptome_clust.log"
+  threads:
+    1
+  params:
+    memory="8"
+  run:
+    cd_hit_performed = config["cd-hit"]
+    if cd_hit_performed == "true":
+    	cd_hit_performed = True
+    else:
+	    cd_hit_performed = False
+	
+    if cd_hit_performed:
+      headers = []
+
+      with open(input["clustered_proteome"], 'r') as proteome:
+        for record in Bio.SeqIO.parse(proteome, "fasta"):
+          headers.append(record.id)
+
+      headers_short = [header.split('_') for header in headers]
+      headers_short = ['_'.join(sublist[6:]) for sublist in headers_short]
+      headers_short = [header_short.split('.')[0] for header_short in headers_short]
+
+      with open(input["transcriptome_path"], 'r') as transcriptome, open(output["transcriptome_reduced"], 'w') as transcriptome_reduced:
+        for record in Bio.SeqIO.parse(transcriptome, 'fasta'):
+          id_short = record.id.split('_')
+          id_short = '_'.join(id_short[6:])
+        if id_short in headers_short:
+          Bio.SeqIO.write(record, transcriptome_reduced, 'fasta-2line')
+    else:
+      shutil.copy(input["transcriptome_path"], output["transcriptome_reduced"])
+
 
 checkpoint align_reads:
   """
@@ -1031,7 +1167,7 @@ checkpoint fasta_split_pep:
   they can be processed (annotated) in parallel.
   """
   input:
-    "transcriptome.pep"
+    "transcriptome_clst.pep"
   output:
     directory("annotations/chunks_pep")
   log:
@@ -1372,8 +1508,9 @@ rule kallisto:
   """
   input:
     samples="samples_trimmed.txt",
-    transcriptome="transcriptome.fasta",
-    gene_trans_map="transcriptome.gene_trans_map"
+    transcriptome="transcriptome.fasta", 
+    gene_trans_map="transcriptome.gene_trans_map",
+	  clustered_transcriptome="transcriptome_clst.fasta"
   output:
     "transcriptome_expression_isoform.tsv",
     "transcriptome_expression_gene.tsv",
@@ -1392,20 +1529,26 @@ rule kallisto:
 
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
+	
+    if [ {config[cd-hit]} = "true" ]; then
+        transcriptome={input.clustered_transcriptome}
+    else
+        transcriptome={input.transcriptome}
+    fi
 
     if [ $assembler = "rnaspades" ]
     then
       if [[ $strand_specific = "--ss rf" ]]
       then
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type RF --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts $transcriptome --SS_lib_type RF --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       elif [[ $strand_specific = "--ss fr" ]]
       then
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type FR --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts $transcriptome --SS_lib_type FR --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       else
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts $transcriptome --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       fi
     else
-      $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+      $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts $transcriptome {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
     fi
     
     $TRINITY_HOME/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv &>> {log}
