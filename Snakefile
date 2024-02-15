@@ -1511,7 +1511,7 @@ rule kallisto:
     samples="samples_trimmed.txt",
     transcriptome="transcriptome.fasta", 
     gene_trans_map="transcriptome.gene_trans_map",
-	  clustered_transcriptome="transcriptome_clst.fasta"
+    clustered_transcriptome="transcriptome_clst.fasta"
   output:
     "transcriptome_expression_isoform.tsv",
     "transcriptome_expression_gene.tsv",
