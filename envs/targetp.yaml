@@ -1,8 +1,10 @@
+name: targetp
 channels:
   - conda-forge
   - bioconda
   - r
   - defaults
 dependencies:
-- pip:
-  - tmhmm-py
+  - python>=3.8
+  - pip
+  - biopython
