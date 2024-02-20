@@ -16,3 +16,4 @@ dependencies:
   - pip:
     - matplotlib>3.3.2
     - pandas
+    - tmhmm.py
