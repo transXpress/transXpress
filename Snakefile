@@ -34,7 +34,6 @@ rule all:
     "samples_trimmed.txt",
     "transcriptome.fasta",
     "transcriptome.pep",
-    "transcriptome_clst.fasta",
     "transcriptome_stats.txt",
     "ExN50_plot.pdf",
     "transcriptome_annotated.fasta",
@@ -51,7 +50,8 @@ rule all:
     "WARNING_fastqc_before_trim_overview.txt",
     "FastQC_comparison_after_trim.txt",
     "edgeR_trans",
-    ##"clusters.tsv" - can only uncomment if CD-HIT option is set to true in the config.yaml file
+    ## NOTE you can only uncomment the following if CD-HIT option is set to true in the config.yaml file
+    "cd-hit/clusters.tsv" 
 
 rule clean:
   """
@@ -833,7 +833,9 @@ rule cd_hit:
   input:
     "transcriptome.pep"
   output:
-    "transcriptome_clst.pep"
+    clustered_proteome="transcriptome_clst.pep",
+    #out_dir=directory("cd-hit"),
+    clusters="transcriptome_clst.pep.clstr"
   log:
     "logs/cd_hit.log"
   conda:
@@ -845,9 +847,11 @@ rule cd_hit:
   shell:
     """
     if [ {config[cd-hit]} = 'true' ]; then
-      cd-hit -i {input} -o {output} -c 1.00 -n 5 -g 1 -d 0 &>> {log}
+      cd-hit -i {input} -o {output.clustered_proteome} -c 1.00 -n 5 -g 1 -d 0 &>> {log}
+      mkdir -p cd-hit
+      mv {input} -t cd-hit
     else
-      cp {input} {output}
+      cp {input} {output.clustered_proteome}
     fi
     """
   
@@ -858,7 +862,7 @@ rule parse_cdhit:
   input:
     clustered="transcriptome_clst.pep.clstr" # if cd-hit is not run by the pipeline this file will be missing, but this rule can only be run if the user wishes to have the tsv file in the outputs of the pipeline
   output:
-    tsv="clusters.tsv"
+    tsv="cd-hit/clusters.tsv"
   log:
     "logs/parse_cdhit.log"
   threads:
@@ -915,18 +919,18 @@ rule parse_cdhit:
         process_this_cluster(this_cluster, output_file)
 
 
-rule reduce_transcriptome: 
+rule filter_transcriptome: 
   """
-  Combines output of CD-HIT and the transcriptome.fasta file to a clustered transcriptome_clst.fasta file. Output will be a reduced 
+  Combines output of CD-HIT and the transcriptome.fasta file to a filtered transcriptome_filt.fasta file. Output will be a filtered
   transcriptome which will be used as the input for kallisto.
   """
   input:
     clustered_proteome="transcriptome_clst.pep",
     transcriptome_path="transcriptome.fasta"
   output:
-    transcriptome_reduced="transcriptome_clst.fasta"
+    transcriptome_filtered="transcriptome_filt.fasta"
   log:
-    "logs/transcriptome_clust.log"
+    "logs/filter_transcriptome.log"
   threads:
     1
   params:
@@ -949,14 +953,15 @@ rule reduce_transcriptome:
       headers_short = ['_'.join(sublist[6:]) for sublist in headers_short]
       headers_short = [header_short.split('.')[0] for header_short in headers_short]
 
-      with open(input["transcriptome_path"], 'r') as transcriptome, open(output["transcriptome_reduced"], 'w') as transcriptome_reduced:
+      with open(input["transcriptome_path"], 'r') as transcriptome, open(output["transcriptome_filtered"], 'w') as transcriptome_filtered:
         for record in Bio.SeqIO.parse(transcriptome, 'fasta'):
           id_short = record.id.split('_')
           id_short = '_'.join(id_short[6:])
         if id_short in headers_short:
-          Bio.SeqIO.write(record, transcriptome_reduced, 'fasta-2line')
-    else:
-      shutil.copy(input["transcriptome_path"], output["transcriptome_reduced"])
+          Bio.SeqIO.write(record, transcriptome_filtered, 'fasta-2line')
+      shutil.move(input["transcriptome_path"], "cd-hit")
+    # else:
+    #   shutil.copy(input["transcriptome_path"], output["transcriptome_filtered"])
 
 
 checkpoint align_reads:
@@ -1509,9 +1514,8 @@ rule kallisto:
   """
   input:
     samples="samples_trimmed.txt",
-    transcriptome="transcriptome.fasta", 
+    transcriptome="transcriptome_filt.fasta" if config["cd-hit"] == "true" else "transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map",
-    clustered_transcriptome="transcriptome_clst.fasta"
   output:
     "transcriptome_expression_isoform.tsv",
     "transcriptome_expression_gene.tsv",
@@ -1530,26 +1534,20 @@ rule kallisto:
 
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
-	
-    if [ {config[cd-hit]} = "true" ]; then
-        transcriptome={input.clustered_transcriptome}
-    else
-        transcriptome={input.transcriptome}
-    fi
 
     if [ $assembler = "rnaspades" ]
     then
       if [[ $strand_specific = "--ss rf" ]]
       then
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts $transcriptome --SS_lib_type RF --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type RF --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       elif [[ $strand_specific = "--ss fr" ]]
       then
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts $transcriptome --SS_lib_type FR --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type FR --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       else
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts $transcriptome --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
       fi
     else
-      $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts $transcriptome {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
+      $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
     fi
     
     $TRINITY_HOME/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv &>> {log}
@@ -1664,10 +1662,8 @@ rule annotated_fasta:
   .fasta/.pep transcriptome files.
   """
   input:
-    transcriptome="transcriptome.fasta",
-    clustered_transcriptome="transcriptome_clst.fasta",
-    proteome="transcriptome.pep",
-    clustered_proteome="transcriptome_clst.pep",
+    transcriptome="transcriptome_filt.fasta" if config["cd-hit"] == "true" else "transcriptome.fasta",
+    proteome="transcriptome_clst.pep" if config["cd-hit"] == "true" else "transcriptome.pep",
     expression="transcriptome_expression_isoform.tsv",
     blastx_results="annotations/sprotblastx_fasta.out",
     rfam_results="annotations/rfam_fasta.out",
@@ -1698,12 +1694,6 @@ rule annotated_fasta:
       tmhmm_annotations = {}
       signalp_annotations = {}
       targetp_annotations = {}
-
-      cd_hit_performed = config["cd-hit"]
-      if cd_hit_performed == "true":
-        cd_hit_performed = True
-      else:
-        cd_hit_performed = False
   
       ## Load kallisto results
       print ("Loading expression values from", input["expression"], file=log_handle)
@@ -1798,10 +1788,6 @@ rule annotated_fasta:
       
       ## Do the work
       print ("Annotating FASTA file", input["transcriptome"], "to", output["transcriptome_annotated"], file=log_handle)
-      if cd_hit_performed:
-        input_transcriptome = input["clustered_transcriptome"]
-      else:
-        input_transcriptome = input["transcriptome"]
       with open(input["input_transcriptome"], "r") as input_fasta_handle, open(output["transcriptome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = record.id
@@ -1813,10 +1799,6 @@ rule annotated_fasta:
           Bio.SeqIO.write(record, output_fasta_handle, "fasta")
       
       print ("Annotating FASTA file", input["proteome"], "to", output["proteome_annotated"], file=log_handle)
-      if cd_hit_performed:
-        input_proteome = input["clustered_proteome"]
-      else:
-        input_proteome = input["proteome"]
       with open(input_proteome, "r") as input_fasta_handle, open(output["proteome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = re.sub("\\.p[0-9]+$", "", record.id)
