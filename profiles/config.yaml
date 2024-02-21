@@ -1,7 +1,7 @@
 # example profile config.yaml for slurm cluster
 # partition names will be different on different clusters
 
-cluster:
+cluster-generic-submit-cmd:
   sbatch
     --partition={resources.partition}
     -n {threads}
