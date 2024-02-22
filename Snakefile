@@ -866,6 +866,8 @@ rule parse_cdhit:
     "logs/parse_cdhit.log"
   threads:
     1
+  params:
+    memory="8"
   run:
     cl_size = 0          
     clstr_cl_size = ""  
