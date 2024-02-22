@@ -18,3 +18,4 @@ dependencies:
     - matplotlib>3.3.2
     - pandas
     - tmhmm.py
+    - numpy==1.23.2
