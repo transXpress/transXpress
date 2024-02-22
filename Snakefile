@@ -51,7 +51,7 @@ rule all:
     "FastQC_comparison_after_trim.txt",
     "edgeR_trans",
     ## NOTE you can only uncomment the following if CD-HIT option is set to true in the config.yaml file
-    "cd-hit/clusters.tsv" 
+    # "cd-hit/clusters.tsv" 
 
 rule clean:
   """
@@ -834,7 +834,7 @@ rule cd_hit:
     "transcriptome.pep"
   output:
     clustered_proteome="transcriptome_clst.pep",
-    #out_dir=directory("cd-hit"),
+    proteome_original="cd-hit/transcriptome.pep",
     clusters="transcriptome_clst.pep.clstr"
   log:
     "logs/cd_hit.log"
@@ -848,10 +848,9 @@ rule cd_hit:
     """
     if [ {config[cd-hit]} = 'true' ]; then
       cd-hit -i {input} -o {output.clustered_proteome} -c 1.00 -n 5 -g 1 -d 0 &>> {log}
-      mkdir -p cd-hit
-      mv {input} -t cd-hit
-    else
-      cp {input} {output.clustered_proteome}
+      mkdir -p cd-hit &> {log}
+      cp {input} {output.proteome_original} &> {log}
+      rm -r {input} 
     fi
     """
   
@@ -1173,7 +1172,7 @@ checkpoint fasta_split_pep:
   they can be processed (annotated) in parallel.
   """
   input:
-    "transcriptome_clst.pep"
+    "transcriptome_clst.pep" if config["cd-hit"] == "true" else "transcriptome.pep"
   output:
     directory("annotations/chunks_pep")
   log:
