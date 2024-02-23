@@ -961,6 +961,7 @@ rule filter_transcriptome:
         if id_short in headers_short:
           Bio.SeqIO.write(record, transcriptome_filtered, 'fasta-2line')
       shutil.move(input["transcriptome_path"], "cd-hit")
+      os.remove(input["transcriptome_path"])
     # else:
     #   shutil.copy(input["transcriptome_path"], output["transcriptome_filtered"])
 
