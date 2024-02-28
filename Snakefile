@@ -49,7 +49,9 @@ rule all:
     "multiqc_after_trim.txt",
     "WARNING_fastqc_before_trim_overview.txt",
     "FastQC_comparison_after_trim.txt",
-    "edgeR_trans"
+    "edgeR_trans",
+    ## NOTE you can only uncomment the following if CD-HIT option is set to true in the config.yaml file
+    # "cd-hit/clusters.tsv" 
 
 rule clean:
   """
@@ -821,6 +823,148 @@ rule transdecoder_predict:
     cp -p transdecoder/{input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
 
+rule cd_hit:
+  """
+  (optional)
+  Apply CD-HIT on transcriptome.pep to get rid of redundant sequences (saves space and time complexity). CD-HIT reduces space by clustering 100% identical 
+  sequences into one representative sequence. If config[cd-hit] is set to False, we just copy the input file into the output file.
+  output are two files: a fasta file of representative sequences and a text file of list of clusters
+  """
+  input:
+    "transcriptome.pep"
+  output:
+    clustered_proteome="transcriptome_clst.pep",
+    proteome_original="cd-hit/transcriptome.pep",
+    clusters="transcriptome_clst.pep.clstr"
+  log:
+    "logs/cd_hit.log"
+  conda:
+    "envs/cdhit.yaml"
+  params:
+    memory="8"
+  threads:
+    1
+  shell:
+    """
+    if [ {config[cd-hit]} = 'true' ]; then
+      cd-hit -i {input} -o {output.clustered_proteome} -c 1.00 -n 5 -g 1 -d 0 &>> {log}
+      mkdir -p cd-hit &> {log}
+      cp {input} {output.proteome_original} &> {log}
+      rm -r {input} 
+    fi
+    """
+  
+rule parse_cdhit:
+  """
+  Parse the CD-HIT output.
+  """
+  input:
+    clustered="transcriptome_clst.pep.clstr" # if cd-hit is not run by the pipeline this file will be missing, but this rule can only be run if the user wishes to have the tsv file in the outputs of the pipeline
+  output:
+    tsv="cd-hit/clusters.tsv"
+  log:
+    "logs/parse_cdhit.log"
+  threads:
+    1
+  params:
+    memory="8"
+  run:
+    cl_size = 0          
+    clstr_cl_size = ""  
+    this_cluster = []    
+
+    def process_this_cluster(this_cluster, output):
+      t = sorted(this_cluster, key=lambda x: (x[2], x[1]), reverse=True)
+      longest = 0
+      for i in t:
+        if i[2]:
+          longest = i[1]
+      for i in t:
+        if i[1] is None:
+          continue
+        else:
+          cov = int(i[1] / longest * 100) 
+        print(f"{i[0]}\t{clstr_cl_size}\t{cl_size}\t{i[1]}\t{i[2]}\t{i[3]}\t{cov}%", file=output)
+
+    with open(output["tsv"], "w") as output_file:
+      print("id\tclstr\tclstr_size\tlength\tclstr_rep\tclstr_iden\tclstr_cov", file=output_file)  
+      for line in open(input["clustered"]):
+        if line.startswith('>'):
+          if cl_size > 0:
+            process_this_cluster(this_cluster, output_file) 
+          if line.startswith('>Cluster '):
+            clstr_cl_size = line.split()[1]  
+          cl_size = 0
+          this_cluster = []
+        else:
+          id, len, rep, iden = None, None, None, None
+          match = re.match(r'\d+\t(\d+)[a-z]{2}, >NODE_\d+_length_\d+_cov_\d+\.\d+_(g\d+_i\d+\.p\d+)', line)
+          if match:
+            len = int(match.group(1))
+            id = match.group(2)
+            rep = 1   
+            iden = 100 
+          elif re.match(r'\d+\t(\d+)[a-z]{2}, >(.+)\.\.\.', line):
+            match = re.match(r'\d+\t(\d+)[a-z]{2}, >(.+)\.\.\.', line)
+            len = int(match.group(1))
+            id = match.group(2)
+            rep = 0  
+            match = re.search(r'(\d+%|\d+\.\d+%)$', line)
+            iden = match.group(1)
+          else:
+            print("***********")
+          this_cluster.append((id, len, rep, iden))
+          cl_size += 1
+
+      if cl_size > 0:
+        process_this_cluster(this_cluster, output_file)
+
+
+rule filter_transcriptome: 
+  """
+  Combines output of CD-HIT and the transcriptome.fasta file to a filtered transcriptome_filt.fasta file. Output will be a filtered
+  transcriptome which will be used as the input for kallisto.
+  """
+  input:
+    clustered_proteome="transcriptome_clst.pep",
+    transcriptome_path="transcriptome.fasta"
+  output:
+    transcriptome_filtered="transcriptome_filt.fasta"
+  log:
+    "logs/filter_transcriptome.log"
+  threads:
+    1
+  params:
+    memory="8"
+  run:
+    cd_hit_performed = config["cd-hit"]
+    if cd_hit_performed == "true":
+    	cd_hit_performed = True
+    else:
+	    cd_hit_performed = False
+	
+    if cd_hit_performed:
+      headers = []
+
+      with open(input["clustered_proteome"], 'r') as proteome:
+        for record in Bio.SeqIO.parse(proteome, "fasta"):
+          headers.append(record.id)
+
+      headers_short = [header.split('_') for header in headers]
+      headers_short = ['_'.join(sublist[6:]) for sublist in headers_short]
+      headers_short = [header_short.split('.')[0] for header_short in headers_short]
+
+      with open(input["transcriptome_path"], 'r') as transcriptome, open(output["transcriptome_filtered"], 'w') as transcriptome_filtered:
+        for record in Bio.SeqIO.parse(transcriptome, 'fasta'):
+          id_short = record.id.split('_')
+          id_short = '_'.join(id_short[6:])
+        if id_short in headers_short:
+          Bio.SeqIO.write(record, transcriptome_filtered, 'fasta-2line')
+      shutil.move(input["transcriptome_path"], "cd-hit")
+      os.remove(input["transcriptome_path"])
+    # else:
+    #   shutil.copy(input["transcriptome_path"], output["transcriptome_filtered"])
+
 
 checkpoint align_reads:
   """
@@ -1031,7 +1175,7 @@ checkpoint fasta_split_pep:
   they can be processed (annotated) in parallel.
   """
   input:
-    "transcriptome.pep"
+    "transcriptome_clst.pep" if config["cd-hit"] == "true" else "transcriptome.pep"
   output:
     directory("annotations/chunks_pep")
   log:
@@ -1376,8 +1520,8 @@ rule kallisto:
   """
   input:
     samples="samples_trimmed.txt",
-    transcriptome="transcriptome.fasta",
-    gene_trans_map="transcriptome.gene_trans_map"
+    transcriptome="transcriptome_filt.fasta" if config["cd-hit"] == "true" else "transcriptome.fasta",
+    gene_trans_map="transcriptome.gene_trans_map",
   output:
     "transcriptome_expression_isoform.tsv",
     "transcriptome_expression_gene.tsv",
@@ -1524,8 +1668,8 @@ rule annotated_fasta:
   .fasta/.pep transcriptome files.
   """
   input:
-    transcriptome="transcriptome.fasta",
-    proteome="transcriptome.pep",
+    transcriptome="transcriptome_filt.fasta" if config["cd-hit"] == "true" else "transcriptome.fasta",
+    proteome="transcriptome_clst.pep" if config["cd-hit"] == "true" else "transcriptome.pep",
     expression="transcriptome_expression_isoform.tsv",
     blastx_results="annotations/sprotblastx_fasta.out",
     rfam_results="annotations/rfam_fasta.out",

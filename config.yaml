@@ -75,3 +75,12 @@ dispersion: "0.1"
 # lineage: "eudicots_odb10"
 # You can list all possible lineages by running "busco --list-datasets"
 lineage: "eudicots_odb10"
+
+# CD-HIT option
+# By default the pipeline doesn't cluster identical sequences
+# If you would like to cluster 100% identical sequences then set this parameter to "true"
+# If set to true the pipeline will run CD-HIT with these parameters: cd-hit -i {input} -o {output} -c 1.00 -n 5 -g 1 -d 0 &>> {log}
+cd-hit: "false" 
+
+# NOTE: if you set CD-HIT to true you can also add clusters.tsv to the list of files in rule all in Snakefile
+# by adding it the pipeline will generate a tsv file with the information about the clusters CD-HIT generated
