@@ -4,7 +4,7 @@ channels:
   - r
   - defaults
 dependencies:
-  - snakemake>=3.9.0
+  - snakemake>=8
   - python>=3.8,<3.12
   - pip
   - biopython
@@ -14,6 +14,7 @@ dependencies:
   - blast=2.10
   - gcc
   - pip:
+    - snakemake-executor-plugin-cluster-generic
     - matplotlib>3.3.2
     - pandas
     - tmhmm.py
