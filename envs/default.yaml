@@ -5,7 +5,7 @@ channels:
   - defaults
 dependencies:
   - snakemake>=8
-  - python>=3.8
+  - python>=3.8,<3.12
   - pip
   - biopython
   - seqkit 
