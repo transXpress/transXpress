@@ -30,7 +30,7 @@ rule all:
   """
   List of target files of the transxpress pipeline.
   """
-  input: 
+  input:
     "samples_trimmed.txt",
     "transcriptome.fasta",
     "transcriptome.pep",
